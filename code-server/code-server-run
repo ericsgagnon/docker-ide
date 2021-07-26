@@ -1,0 +1,62 @@
+#!/bin/bash
+
+# grab the username
+source /etc/profile.d/0000-env.sh
+eval $(cat /etc/cont-init.d/001-userconf.sh  | grep -E "^export USER_NAME" | envsubst)
+
+export CODE_SERVER_AUTH=${AUTH:-password}
+export CODE_SERVER_DISABLE_TELEMETRY=${CODE_SERVER_DISABLE_TELEMETRY:=true}
+export CODE_SERVER_DISABLE_UPDATE_CHECK=${CODE_SERVER_DISABLE_UPDATE_CHECK:=true}
+export CODE_SERVER_BIND_ADDR=${CODE_SERVER_BIND_ADDR:='0.0.0.0:8080'}
+# export CODE_SERVER_PASSWORD=${PASSWORD}
+# export CODE_SERVER_HASHED_PASSWORD=${HASHED_PASSWORD}
+# export CODE_SERVER_CERT=${CODE_SERVER_CERT}
+# export CODE_SERVER_CERT_HOST=${CODE_SERVER_CERT_HOST}
+# export CODE_SERVER_CERT_KEY=${CODE_SERVER_CERT_KEY}
+# export CODE_SERVER_CONFIG=${CODE_SERVER_CONFIG}
+# export CODE_SERVER_SOCKET=${CODE_SERVER_SOCKET}
+# export CODE_SERVER_USER_DATA_DIR=${CODE_SERVER_USER_DATA_DIR}
+# export CODE_SERVER_EXTENSIONS_DIR=${CODE_SERVER_EXTENSIONS_DIR}
+# export CODE_SERVER_ENABLE_PROPOSED_API=${CODE_SERVER_ENABLE_PROPOSED_API}
+# export CODE_SERVER_PROXY_DOMAIN=${CODE_SERwVER_PROXY_DOMAIN}
+# export CODE_SERVER_LINK=${CODE_SERVER_LINK}
+
+CODE_SERVER_CLI_ARGS=\
+${CODE_SERVER_AUTH:+"                 --auth                 ${CODE_SERVER_AUTH}                 "}\
+${CODE_SERVER_CERT:+"                 --cert                 ${CODE_SERVER_CERT}                 "}\
+${CODE_SERVER_CERT_HOST:+"            --cert-host            ${CODE_SERVER_CERT_HOST}            "}\
+${CODE_SERVER_CERT_KEY:+"             --cert-key             ${CODE_SERVER_CERT_KEY}             "}\
+${CODE_SERVER_DISABLE_TELEMETRY:+"    --disable-telemetry                                        "}\
+${CODE_SERVER_DISABLE_UPDATE_CHECK:+" --disable-update-check                                     "}\
+${CODE_SERVER_BIND_ADDR:+"            --bind-addr            ${CODE_SERVER_BIND_ADDR}            "}\
+${CODE_SERVER_CONFIG:+"               --config               ${CODE_SERVER_CONFIG}               "}\
+${CODE_SERVER_SOCKET:+"               --socket               ${CODE_SERVER_SOCKET}               "}\
+${CODE_SERVER_USER_DATA_DIR:+"        --user-data-dir        ${CODE_SERVER_USER_DATA_DIR}        "}\
+${CODE_SERVER_EXTENSIONS_DIR:+"       --extensions-dir       ${CODE_SERVER_EXTENSIONS_DIR}       "}\
+${CODE_SERVER_ENABLE_PROPOSED_API:+"  --enable-proposed-api  ${CODE_SERVER_ENABLE_PROPOSED_API}  "}\
+${CODE_SERVER_PROXY_DOMAIN:+"         --proxy-domain         ${CODE_SERVER_PROXY_DOMAIN}         "}\
+${CODE_SERVER_LINK:+"                 --link                 ${CODE_SERVER_LINK}                 "}
+
+# ${CODE_SERVER_PASSWORD+"              --password             ${CODE_SERVER_PASSWORD}             "}\
+# ${CODE_SERVER_HASHED_PASSWORD:+"      --hashed-password      ${CODE_SERVER_HASHED_PASSWORD}      "}\
+#echo "export CODE_SERVER_ARGS=${CODE_SERVER_ARGS}" >> /etc/profile.d/0000-env.sh 
+
+echo "-----------------------------------------------------------"
+echo "Running code-server as: ${USER_NAME:=liveware}"
+su - ${USER_NAME} -c 'id'
+echo "-----------------------------------------------------------"
+#echo "# s6-setuidgid $USER /usr/local/bin/code-server --disable-update-check --bind-addr 0.0.0.0:8080 $HOME"
+#s6-setuidgid ${USER_NAME} /usr/local/bin/code-server --disable-update-check --bind-addr 0.0.0.0:8080 ${USER_HOME}
+
+# override password/hashed password for code-server
+# if [[ ${CODE_SERVER_NO_PASSWORD} ]] ; then
+#     su - ${USER_NAME} -c '
+#         /usr/local/bin/code-server --disable-update-check --auth none --bind-addr 0.0.0.0:8080 ${HOME}
+#     '
+# else
+#     su - ${USER_NAME} -c '
+#         /usr/local/bin/code-server --disable-update-check --bind-addr 0.0.0.0:8080 ${HOME}
+#     '
+# fi
+su - ${USER_NAME} -c "echo /usr/local/bin/code-server ${CODE_SERVER_CLI_ARGS} "'${HOME}'
+su - ${USER_NAME} -c '/usr/local/bin/code-server '"${CODE_SERVER_CLI_ARGS}"'${HOME}'

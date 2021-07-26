@@ -1,0 +1,6 @@
+#!/bin/bash
+
+source /etc/profile.d/0000-env.sh
+
+export RETICULATE_PYTHON=$(which python)
+
