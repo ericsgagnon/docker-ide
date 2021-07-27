@@ -43,4 +43,18 @@ ENV SERVICE_URL=https://marketplace.visualstudio.com/_apis/public/gallery
 ENV ITEM_URL=https://marketplace.visualstudio.com/items
 EXPOSE 8080
 
+# caddy (proxy server) #######################################################
+RUN apt-get update \
+    && apt-get install -y \
+    debian-keyring \
+    debian-archive-keyring \
+    apt-transport-https \
+    && curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | tee /etc/apt/trusted.gpg.d/caddy-stable.asc \
+    && curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' | tee /etc/apt/sources.list.d/caddy-stable.list \
+    && apt-get update \
+    && apt-get install -y caddy
+
+COPY caddy-server/Caddyfile /etc/caddy/Caddyfile
+
+EXPOSE 80 443
 

@@ -1,0 +1,46 @@
+#!/bin/bash
+
+# grab the username
+source /etc/profile.d/0000-env.sh
+eval $(cat /etc/cont-init.d/001-userconf.sh  | grep -E "^export USER_NAME" | envsubst)
+
+echo "-----------------------------------------------------------"
+echo "Running rstudio-server as: ${USER_NAME:=liveware}"
+su - ${USER_NAME} -c 'id'
+echo "-----------------------------------------------------------"
+
+
+chown -R root:root /var/lib/rstudio-server
+chmod -R g=u /var/lib/rstudio-server
+
+#  override password/hashed password for code-server
+if [[ ${RSTUDIO_SERVER_NO_PASSWORD} ]] ; then
+
+    USER=liveware su - liveware -c '
+        /usr/lib/rstudio-server/bin/rserver --www-port 8787 --auth-none=1 --server-user=${USER} --server-daemonize=0 --server-working-dir=/home/${USER}
+    '
+else
+    USER=liveware su - liveware -c '
+        /usr/lib/rstudio-server/bin/rserver --www-port 8787 --server-daemonize=0 
+    '
+fi
+
+
+
+
+#!/bin/bash
+
+# grab the username
+source /etc/profile.d/0000-env.sh
+eval $(cat /etc/cont-init.d/001-userconf.sh  | grep -E "^export USER_NAME" | envsubst)
+
+caddy run ${CADDY_CLI_ARGS}
+
+
+
+
+--envfile
+--config
+--watch
+
+
