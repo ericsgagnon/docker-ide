@@ -1,0 +1,20 @@
+:80
+
+redir /code /code/
+
+route /code/* {
+  uri strip_prefix /code
+  reverse_proxy 127.0.0.1:8080
+}
+
+redir /rstudio /rstudio/
+
+route /rstudio/* {
+  uri strip_prefix /rstudio
+
+  reverse_proxy {
+    to 127.0.0.1:8787
+    #header_down Location ([^:]+//)([^:]+)((:[^/]+)?)(.*)  /rstudio/$2
+    header_down  Location ({scheme}://{host}:?{port}?/)  ./
+  }
+}
