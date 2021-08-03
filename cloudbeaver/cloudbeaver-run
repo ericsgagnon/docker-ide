@@ -1,0 +1,56 @@
+#!/bin/bash
+
+
+docker run --name cloudbeaver --rm -tid -p 8978:8978 dbeaver/cloudbeaver:latest
+
+# https://cloudbeaver.io/docs/Server-configuration/
+
+CB_SERVER_NAME="cloudbeaver"
+CB_SERVER_URL="./cloudbeaver/"
+CB_ADMIN_NAME="admin"
+CB_ADMIN_PASSWORD="password"
+#CLOUDBEAVER_HOME="/path/to/server/cloubeaver/root"
+
+--web-config="/etc/cloudbeaver/cloudbeaver.conf"
+
+cloudbeaver.conf
+{
+    server: {
+        serverPort: 8978,
+        serverName: "CloudBeaver",
+
+        // Paths are absolute or relative to the server root folder
+        workspaceLocation: "workspace",
+        contentRoot: "web",
+        driversLocation: "drivers",
+
+        rootURI: "/cloudbeaver/",
+        serviceURI: "/cloudbeaver/api/",
+
+        // Webapp configuration file
+        productConfiguration: "conf/product.conf",
+
+        expireSessionAfterPeriod: 600000,
+
+        develMode: false
+    },
+    app: {
+        anonymousAccessAllowed: true,
+        anonymousUserRole: "admin"
+    }
+
+}
+
+
+product.conf
+
+{
+    "core": {
+        "user": {
+            "defaultTheme": "dark"
+        }
+    }
+ "plugin_data_export": {
+    "disabled": false
+ }
+}

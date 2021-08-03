@@ -4,24 +4,31 @@
 source /etc/profile.d/0000-env.sh
 eval $(cat /etc/cont-init.d/001-userconf.sh  | grep -E "^export USER_NAME" | envsubst)
 
-echo "-----------------------------------------------------------"
-echo "Running rstudio-server as: ${USER_NAME:=liveware}"
-su - ${USER_NAME} -c 'id'
-echo "-----------------------------------------------------------"
-
-
 chown -R root:root /var/lib/rstudio-server
 chmod -R g=u /var/lib/rstudio-server
 
-#  override password/hashed password for code-server
-if [[ ${RSTUDIO_SERVER_NO_PASSWORD} ]] ; then
-
-    USER=liveware su - liveware -c '
-        /usr/lib/rstudio-server/bin/rserver --www-port 8787 --auth-none=1 --server-user=${USER} --server-daemonize=0 --server-working-dir=/home/${USER}
-    '
+# rstudio server uses an 'auth-none' flag to disable auth
+if [[ ${AUTH} == 'none' ]] ; then
+    RSTUDIO_SERVER_AUTH_NONE="1"
 else
-    USER=liveware su - liveware -c '
-        /usr/lib/rstudio-server/bin/rserver --www-port 8787 --server-daemonize=0 
-    '
+    RSTUDIO_SERVER_AUTH_NONE=""
 fi
 
+export RSTUDIO_SERVER_ADDR=${RSTUDIO_SERVER_ADDR:='0.0.0.0'}
+export RSTUDIO_SERVER_PORT=${RSTUDIO_SERVER_PORT:='8787'}
+
+RSTUDIO_SERVER_CLI_ARGS=\
+${RSTUDIO_SERVER_ADDR:+"      --www-address   ${RSTUDIO_SERVER_ADDR}            "}\
+${RSTUDIO_SERVER_PORT:+"      --www-port      ${RSTUDIO_SERVER_PORT}            "}\
+${RSTUDIO_SERVER_AUTH_NONE:+" --auth-none     ${RSTUDIO_SERVER_AUTH_NONE}       "}\
+${USER_NAME:+"                --server-user   ${USER_NAME}                      "}\
+${USER_NAME:+"                --server-working-dir "'${HOME}'"                  "}
+
+echo "-----------------------------------------------------------"
+echo "Running rstudio-server as: ${USER_NAME:=liveware}"
+su - ${USER_NAME} -c 'id'
+echo "Command:"
+su - ${USER_NAME} -c "echo /usr/lib/rstudio-server/bin/rserver --server-daemonize=0 ${RSTUDIO_SERVER_CLI_ARGS}"
+echo "-----------------------------------------------------------"
+su - ${USER_NAME} -c "/usr/lib/rstudio-server/bin/rserver --server-daemonize=0 ${RSTUDIO_SERVER_CLI_ARGS}"
+echo "-----------------------------------------------------------"

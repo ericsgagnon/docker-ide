@@ -1,20 +1,46 @@
 :80
 
 redir /code /code/
-
 route /code/* {
   uri strip_prefix /code
   reverse_proxy 127.0.0.1:8080
 }
 
 redir /rstudio /rstudio/
-
 route /rstudio/* {
   uri strip_prefix /rstudio
-
   reverse_proxy {
     to 127.0.0.1:8787
-    #header_down Location ([^:]+//)([^:]+)((:[^/]+)?)(.*)  /rstudio/$2
-    header_down  Location ({scheme}://{host}:?{port}?/)  ./
+    header_down  Location (?:^.+://)?(?:[^:/]+)?(?::[^/]+)?/  ./
+    # header_down  Location ([^:]+://[^:]+(:[0-9]+)?/)  ./
+  }
+}
+
+redir /pgadmin  /pgadmin/
+route /pgadmin/* {
+  #uri strip_prefix /pgadmin
+  reverse_proxy {
+    to 127.0.0.1:5050
+    #header_down  Location (?:^.+://)?(?:[^:/]+)?(?::[^/]+)?/  ./
+    header_up    X-Forwarded-Prefix    /pgadmin
+    header_up    X-Script-Name         /pgadmin
+  }
+}
+
+redir /jupyter /jupyter/
+route /jupyter/* {
+  uri strip_prefix /jupyter
+  reverse_proxy {
+    to 127.0.0.1:8888
+    header_down  Location (?:^.+://)?(?:[^:/]+)?(?::[^/]+)?/  ./
+  }
+}
+
+redir /cloudbeaver /cloudbeaver/
+route /cloudbeaver/* {
+  uri strip_prefix /cloudbeaver
+  reverse_proxy {
+    to 127.0.0.1:8978
+    header_down  Location (?:^.+://)?(?:[^:/]+)?(?::[^/]+)?/  ./
   }
 }

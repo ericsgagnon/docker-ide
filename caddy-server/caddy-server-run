@@ -4,43 +4,30 @@
 source /etc/profile.d/0000-env.sh
 eval $(cat /etc/cont-init.d/001-userconf.sh  | grep -E "^export USER_NAME" | envsubst)
 
-echo "-----------------------------------------------------------"
-echo "Running rstudio-server as: ${USER_NAME:=liveware}"
-su - ${USER_NAME} -c 'id'
-echo "-----------------------------------------------------------"
-
-
-chown -R root:root /var/lib/rstudio-server
+chown -R ${USER_NAME}:${GROUP_NAME} /var/log/pgadmin
 chmod -R g=u /var/lib/rstudio-server
 
-#  override password/hashed password for code-server
-if [[ ${RSTUDIO_SERVER_NO_PASSWORD} ]] ; then
+# TODO: AUTH: none, oidc, password
+# use caddy as the auth gatekeeper:
+# none: PAM password created but not required for anything
+# oidc: use oidc
+# password: use PAM
 
-    USER=liveware su - liveware -c '
-        /usr/lib/rstudio-server/bin/rserver --www-port 8787 --auth-none=1 --server-user=${USER} --server-daemonize=0 --server-working-dir=/home/${USER}
-    '
-else
-    USER=liveware su - liveware -c '
-        /usr/lib/rstudio-server/bin/rserver --www-port 8787 --server-daemonize=0 
-    '
-fi
+CADDY_SERVER_CONFIG=${CADDY_SERVER_CONFIG:='/etc/caddy/Caddyfile'}
 
+# build the command to run
+CADDY_SERVER_CLI_ARGS=${CADD_SERVER_CLI_ARGS:=" --config ${CADDY_SERVER_CONFIG} "}
 
+CADDY_SERVER_CLI_CMD=${CADDY_SERVER_CLI_CMD:=" $(which caddy) run ${CADDY_SERVER_CLI_ARGS}" }
 
-
-#!/bin/bash
-
-# grab the username
-source /etc/profile.d/0000-env.sh
-eval $(cat /etc/cont-init.d/001-userconf.sh  | grep -E "^export USER_NAME" | envsubst)
-
-caddy run ${CADDY_CLI_ARGS}
-
-
-
-
---envfile
---config
---watch
-
-
+{
+    echo "----------------------------------------------------------------------"
+    echo "Caddy Server"
+    echo "--------------------"
+    su - ${USER_NAME} -c 'echo "User: $(id)" '
+    echo "Command:"
+    su - ${USER_NAME} -c "echo ${CADDY_SERVER_CLI_CMD}"
+    echo "--------------------"
+    su - ${USER_NAME} -c "${CADDY_SERVER_CLI_CMD}"
+    echo "----------------------------------------------------------------------"
+}
