@@ -85,7 +85,10 @@ RUN curl https://www.pgadmin.org/static/packages_pgadmin_org.pub | sudo apt-key 
     && apt-get install -y \
     pgadmin4 \
     pgadmin4-web \
-    gunicorn
+    gunicorn \
+    musl-dev
+
+#ln -s /usr/lib/x86_64-linux-musl/libc.so /lib/libc.musl-x86_64.so.1
 
 # https://raw.githubusercontent.com/postgres/pgadmin4/master/requirements.txt
 
@@ -114,8 +117,8 @@ COPY --from=pgadmin      /usr/local/pgsql-9.6 /usr/local/pgsql/pgsql-9.6
 # Configure the webserver, if you installed pgadmin4-web:
 # /usr/pgadmin4/bin/setup-web.sh
 
-COPY --from=dpage/pgadmin4:latest /pgadmin4       /pgadmin4
-COPY --from=dpage/pgadmin4:latest /venv           /venv
+COPY --from=dpage/pgadmin4:latest /pgadmin4       /usr/local/pgadmin4
+#COPY --from=dpage/pgadmin4:latest /venv           /venv
 # COPY --from=dpage/pgadmin4:latest /entrypoint.sh  /usr/local/pgadmin/entrypoint.sh
 # COPY --from=dpage/pgadmin4:latest /pgadmin4       /usr/local/pgadmin/pgadmin4
 # COPY --from=dpage/pgadmin4:latest /venv           /usr/local/pgadmin/venv
@@ -134,44 +137,6 @@ COPY --from=dpage/pgadmin4:latest /venv           /venv
 # /usr/local/pgadmin4/venv/bin/python -m pip install --upgrade pip
 # --no-cache-dir -r ./requirements.txt 
 
-python3 -m venv --system-site-packages --without-pip / && \
-/venv/bin/python3 -m pip install --no-cache-dir -r requirements.txt
-
-git clone https://github.com/postgres/pgadmin4
-
-cd /usr/local/pgadmin4 \
-&& python -m venv venv \
-&& source venv/bin/activate \
-&& cd venv \
-&& wget https://raw.githubusercontent.com/postgres/pgadmin4/master/requirements.txt \
-&& pip install -r requirements.txt \
-&& pip install gunicorn \
-&& cd /usr/local/pgadmin4 \
-&& /usr/local/pgadmin4/venv/bin/gunicorn \
---timeout 86400 \
---bind 0.0.0.0:5050 \
--e SCRIPT_NAME=/pgadmin \
---pythonpath=/usr/local/pgadmin4 \
--w 1 \
---threads 25 \
---access-logfile - \
--c gunicorn_config.py \
-run_pgadmin:app
-
-
-/venv/bin/gunicorn --timeout 86400 --bind 0.0.0.0:5050 -w 1 --threads 25 --access-logfile - -c gunicorn_config.py run_pgadmin:app
-
-su - liveware
-sudo mkdir /var/lib/pgadmin
-sudo mkdir /var/log/pgadmin
-sudo chown -R liveware:liveware /var/log/pgadmin
-sudo chown -R liveware:liveware /var/lib/pgadmin
-sudo chown liveware:liveware /pgadmin4/config_distro.py
-
-export PGADMIN_SETUP_EMAIL='admin@example.com'
-export PGADMIN_SETUP_PASSWORD='password'
-/venv/bin/python3 run_pgadmin.py
-cd /pgadmin4 && /venv/bin/gunicorn --timeout 86400 --bind 0.0.0.0:5050 -w 1 --threads 25 --access-logfile - -c gunicorn_config.py run_pgadmin:app
 
 # jupyterlab #################################################################
 
