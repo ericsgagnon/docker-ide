@@ -61,16 +61,6 @@ ENV ITEM_URL=https://marketplace.visualstudio.com/items
 # caddy (proxy server) #######################################################
 FROM code-server as caddy-server
 
-# RUN apt-get update \
-#     && apt-get install -y \
-#     debian-keyring \
-#     debian-archive-keyring \
-#     apt-transport-https \
-#     && curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | tee /etc/apt/trusted.gpg.d/caddy-stable.asc \
-#     && curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' | tee /etc/apt/sources.list.d/caddy-stable.list \
-#     && apt-get update \
-#     && apt-get install -y caddy
-
 COPY --from=caddy-builder /usr/bin/caddy /usr/bin/caddy
 COPY caddy-server/caddy-server-run /etc/services.d/caddy-server/run
 COPY caddy-server/Caddyfile /etc/caddy/Caddyfile
@@ -154,6 +144,7 @@ RUN [ ! -d "/etc/skel/.local/share/cloudbeaver/.metadata" ] \
     && mkdir -p /etc/skel/.local/share/cloudbeaver/GlobalConfiguration/.dbeaver \
     && cp /opt/cloudbeaver/conf/initial-data-sources.conf /etc/skel/.local/share/cloudbeaver/GlobalConfiguration/.dbeaver/data-sources.json
 
+COPY cloudbeaver/.product.runtime.conf /etc/skel/.local/share/cloudbeaver/.data/.product.runtime.conf
 COPY cloudbeaver/cloudbeaver-run /etc/services.d/cloudbeaver/run
 # EXPOSE 8978
 

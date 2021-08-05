@@ -16,7 +16,7 @@ chmod -R g=u /var/lib/rstudio-server
 CADDY_SERVER_CONFIG=${CADDY_SERVER_CONFIG:='/etc/caddy/Caddyfile'}
 
 # build the command to run
-CADDY_SERVER_CLI_ARGS=${CADD_SERVER_CLI_ARGS:=" --config ${CADDY_SERVER_CONFIG} "}
+CADDY_SERVER_CLI_ARGS=${CADD_SERVER_CLI_ARGS:=" --config ${CADDY_SERVER_CONFIG} --watch "}
 
 CADDY_SERVER_CLI_CMD=${CADDY_SERVER_CLI_CMD:=" $(which caddy) run ${CADDY_SERVER_CLI_ARGS}" }
 
