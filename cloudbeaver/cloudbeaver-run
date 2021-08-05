@@ -1,49 +1,73 @@
 #!/bin/bash
 
-
-docker run --name cloudbeaver --rm -tid -p 8978:8978 dbeaver/cloudbeaver:latest
+# grab the username
+source /etc/profile.d/0000-env.sh
+eval $(cat /etc/cont-init.d/001-userconf.sh  | grep -E "^export USER_NAME" | envsubst)
 
 # https://cloudbeaver.io/docs/Server-configuration/
+export CB_SERVER_NAME=${CB_SERVER_NAME:="Cloud Beaver"}
+export CB_SERVER_URL=${CB_SERVER_URL:="http://localhost:8978"}
+export CB_ADMIN_NAME=${CB_ADMIN_NAME:=${USER_NAME}'@localhost'} 
+export CB_ADMIN_PASSWORD=${CB_ADMIN_PASSWORD:=${PASSWORD:-"password"}}
+# cloudbeaver appears to colocate config overrides and user state, using XDG_DATA_HOME for both
+user_xdg_data_home=$(su - ${USER_NAME} -c 'echo $XDG_DATA_HOME')
+user_workspacelocation=${user_xdg_data_home}'/cloudbeaver'
+export CB_SERVER_WORKSPACELOCATION=${CB_SERVER_WORKSPACELOCATION:=${user_workspacelocation}}
+export CLOUDBEAVER_HOME=${CLOUDBEAVER_HOME:="/opt/cloudbeaver"}
+export CB_SERVER_CONF_FILE=${CB_SERVER_CONF_FILE:="${CLOUDBEAVER_HOME}/conf/cloudbeaver.conf"}
 
-CB_SERVER_NAME="cloudbeaver"
-CB_SERVER_URL="./cloudbeaver/"
-CB_ADMIN_NAME="admin"
-CB_ADMIN_PASSWORD="password"
-#CLOUDBEAVER_HOME="/path/to/server/cloubeaver/root"
+# it looks like the only way to change workspace location is by 
+# editing the server config file (/opt/cloudbeaver/conf/cloudbeaver.conf by default)
+cb_server_workspacelocation_sed_expression="sed -i -E 's#(workspaceLocation: \\\")[^\\\"]+#\1${CB_SERVER_WORKSPACELOCATION}#' ${CB_SERVER_CONF_FILE}"
+eval ${cb_server_workspacelocation_sed_expression}
 
---web-config="/etc/cloudbeaver/cloudbeaver.conf"
+mkdir -p ${CB_SERVER_WORKSPACELOCATION}
+chown -R ${USER_NAME:-liveware}:${GROUP_NAME:-liveware} ${CB_SERVER_WORKSPACELOCATION}
 
-cloudbeaver.conf
+# populate the .cloudbeaver.runtime.conf file
+cloudbeaver_server_runtime_conf_file=${CB_SERVER_WORKSPACELOCATION}/.data/.cloudbeaver.runtime.conf
+echo \
+"// this file is overwritten by s6 (via /etc/services.d/cloudbeaver/run) on container restart, do not edit directly
 {
     server: {
-        serverPort: 8978,
-        serverName: "CloudBeaver",
-
-        // Paths are absolute or relative to the server root folder
-        workspaceLocation: "workspace",
-        contentRoot: "web",
-        driversLocation: "drivers",
-
-        rootURI: "/cloudbeaver/",
-        serviceURI: "/cloudbeaver/api/",
-
-        // Webapp configuration file
-        productConfiguration: "conf/product.conf",
-
-        expireSessionAfterPeriod: 600000,
-
-        develMode: false
+        serverName: \"${CB_SERVER_NAME:-Cloud Beaver}\",
+        serverURL: \"${CB_SERVER_SERVERURL:-${CB_SERVER_URL}}\",
+        workspaceLocation: \"${CB_SERVER_WORKSPACELOCATION:-workspace}\",
+        rootURI: \"${CB_SERVER_ROOTURI:-/cloudbeaver}\",
+        serviceURI: \"${CB_SERVER_SERVICEURI:-/api/}\",
+        expireSessionAfterPeriod: ${CBV_SERVER_EXPIRESESSIONAFTERPERIOD:-3600000}
     },
     app: {
-        anonymousAccessAllowed: true,
-        anonymousUserRole: "admin"
+        anonymousAccessEnabled: ${CB_APP_ANONYMOUSACCESSENABLED:-true},
+        anonymousAccessAllowed: ${CB_APP_ANONYMOUSACCESSENABLED:-true},
+        anonymousUserRole: \"${CB_APP_ANONYMOUSUSERROLE:-admin}\",
+        supportsCustomConnections: ${CB_APP_SUPPORTSCUSTOMCONNECTIONS:-true},
+        publicCredentialsSaveEnabled: ${CB_APP_PUBLICCREDENTIALSSAVEENABLED:-true},
+        adminCredentialsSaveEnabled: ${CB_APP_ADMINCREDENTIALSSAVEENABLED:-true},
+        defaultNavigatorSettings: {},
+        enabledAuthProviders: [
+            \"local\"
+        ]
     }
-
 }
+" > ${cloudbeaver_server_runtime_conf_file}
 
 
-product.conf
+export launcherJar=( server/plugins/org.eclipse.equinox.launcher*.jar )
+export CB_CLI_ARGS=\
+" -jar "${CB_CLI_ARGS_JAR:-" ${launcherJar} "}\
+" -product "${CB_CLI_ARGS_PRODUCT:-" io.cloudbeaver.product.ce.product "}\
+" -web-config "${CB_CLI_ARGS_WEB_CONFIG:-" conf/cloudbeaver.conf "}\
+" -nl "${CB_CLI_ARGS_:-" en "}\
+" -registryMultiLanguage "${CB_CLI_ARGS_:-""}\
+" -vmargs "${CB_CLI_ARGS_VMARGS:-" -Xmx2048M "}\
+${CB_CLI_ARGS_ADDITIONAL_ARGS}
+CB_CLI_COMMAND="java ${CB_CLI_ARGS}"
 
+
+# runtime configuration of product.conf
+# (workspace)/.data/.product.runtime.conf
+cloudbeaver_product_runtime_conf_file=${CB_SERVER_WORKSPACELOCATION}/.data/.product.runtime.conf
 {
     "core": {
         "user": {
@@ -54,9 +78,55 @@ product.conf
     "disabled": false
  }
 }
+echo \
+'// 
+{
+    core: {
+        // User defaults
+        user: {
+            defaultTheme: "default",
+            defaultLanguage: "en"
+        },
+        app: {
+            // Log viewer config
+            logViewer: {
+                refreshTimeout: 3000,
+                logBatchSize: 1000,
+                maxLogRecords: 2000,
+                maxFailedRequests: 3
+            },
+            navigationTree: {
+                childrenLimit: 10000
+            }
+        }
+    },
+    plugin_data_spreadsheet_new: {
+        hidden: false
+    },
+    plugin_data_export: {
+        disabled: false
+    },
+    // Notifications config
+    core_events: {
+        notificationsPool: 5
+    }
+}
+' > ${cloudbeaver_product_runtime_conf_file}
 
 
-# Detect host machine IP Address (we need this when run in docker container)
-export CB_LOCAL_HOST_ADDR=$(ifconfig | grep -E "([0-9]{1,3}\.){3}[0-9]{1,3}" | grep -v 127.0.0.1 | awk '{ print $2 }' | cut -f2 -d: | head -n1)
+echo "Starting Cloudbeaver Server"
 
-docker run --name cloudbeaver --rm -ti -p 8978:8978 --add-host=host.docker.internal:${CB_LOCAL_HOST_ADDR} -v /var/cloudbeaver/workspace:/opt/cloudbeaver/workspace dbeaver/cloudbeaver:dev
+cd ${CLOUDBEAVER_HOME} \
+&& [ ! -d "${CB_SERVER_WORKSPACELOCATION}/.metadata" ] \
+&& mkdir -p ${CB_SERVER_WORKSPACELOCATION}/GlobalConfiguration/.dbeaver \
+&& cp conf/initial-data-sources.conf ${CB_SERVER_WORKSPACELOCATION:-workspace}/GlobalConfiguration/.dbeaver/data-sources.json
+
+
+# docker run -dit --name cloudbeaver -p 8978:8978 -e CB_SERVER_NAME="CloudBeaver" -e CB_SERVER_URL="*" -e CB_ADMIN_NAME="cbadmin" -e CB_ADMIN_PASSWORD="password" dbeaver/cloudbeaver:latest
+docker run -dit --name cloudbeaver -p 8978:8978 -e CB_SERVER_NAME="CloudBeaver" -e CB_SERVER_URL="*" -e CB_ADMIN_NAME="cbadmin" -e CB_ADMIN_PASSWORD="password" --entrypoint="/bin/bash" dbeaver/cloudbeaver:latest
+
+/etc/cloudbeaver/cloudbeaver.conf
+workspace/.data/.cloudbeaver.runtime.conf
+
+
+/workspace/.data/.product.runtime.conf

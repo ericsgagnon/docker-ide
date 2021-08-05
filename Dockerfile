@@ -1,7 +1,8 @@
 
 ARG VERSION=dev
 
-FROM dpage/pgadmin4:latest as pgadmin
+FROM dpage/pgadmin4:latest         as pgadmin
+FROM dbeaver/cloudbeaver:latest    as cloudbeaver       
 
 # build caddy with a handful of useful plugins
 FROM caddy:builder AS caddy-builder
@@ -19,7 +20,7 @@ FROM ericsgagnon/ide-base:${VERSION} as base
 FROM base as rstudio
 # capture workspace in the image for reference
 ENV WORKSPACE="/tmp/workspace/ide"
-# Use auth=none by default to use external authentication and skip logins for each ide
+# Use auth=none by default to use external authentication and (try to) skip logins for each ide
 ENV AUTH=none
 COPY . ${WORKSPACE}/
 
@@ -35,7 +36,7 @@ RUN apt-get update && apt-get upgrade -y \
 
 COPY rstudio-server/rsession-profile    /etc/rstudio/rsession-profile
 COPY rstudio-server/rstudio-server-run  /etc/services.d/rstudio-server/run
-EXPOSE 8787
+#EXPOSE 8787
 
 # FROM rstudio as shiny
 
@@ -55,7 +56,7 @@ RUN apt-get update && apt-get upgrade -y \
 COPY code-server/code-server-run /etc/services.d/code-server/run
 ENV SERVICE_URL=https://marketplace.visualstudio.com/_apis/public/gallery
 ENV ITEM_URL=https://marketplace.visualstudio.com/items
-EXPOSE 8080
+#EXPOSE 8080
 
 # caddy (proxy server) #######################################################
 FROM code-server as caddy-server
@@ -77,6 +78,13 @@ COPY caddy-server/Caddyfile /etc/caddy/Caddyfile
 EXPOSE 80 443
 
 # pgadmin ####################################################################
+
+COPY --from=pgadmin      /usr/local/pgsql-13  /usr/local/pgsql/pgsql-13
+COPY --from=pgadmin      /usr/local/pgsql-12  /usr/local/pgsql/pgsql-12
+COPY --from=pgadmin      /usr/local/pgsql-11  /usr/local/pgsql/pgsql-11
+COPY --from=pgadmin      /usr/local/pgsql-10  /usr/local/pgsql/pgsql-10
+COPY --from=pgadmin      /usr/local/pgsql-9.6 /usr/local/pgsql/pgsql-9.6
+COPY --from=pgadmin      /pgadmin4            /usr/local/pgadmin4
 
 # Install the public key for the repository (if not done previously):
 RUN curl https://www.pgadmin.org/static/packages_pgadmin_org.pub | sudo apt-key add \
@@ -100,12 +108,7 @@ RUN curl https://www.pgadmin.org/static/packages_pgadmin_org.pub | sudo apt-key 
 #     pgadmin4 \
 #     gunicorn 
  
-RUN mkdir /usr/local/pgsql
-COPY --from=pgadmin      /usr/local/pgsql-13  /usr/local/pgsql/pgsql-13
-COPY --from=pgadmin      /usr/local/pgsql-12  /usr/local/pgsql/pgsql-12
-COPY --from=pgadmin      /usr/local/pgsql-11  /usr/local/pgsql/pgsql-11
-COPY --from=pgadmin      /usr/local/pgsql-10  /usr/local/pgsql/pgsql-10
-COPY --from=pgadmin      /usr/local/pgsql-9.6 /usr/local/pgsql/pgsql-9.6
+# RUN mkdir /usr/local/pgsql
 
 # /usr/pgadmin4/venv/bin/python3 /usr/pgadmin4/web/setup.py
 # mkdir -p /var/log/pgadmin /var/lib/pgadmin
@@ -117,7 +120,6 @@ COPY --from=pgadmin      /usr/local/pgsql-9.6 /usr/local/pgsql/pgsql-9.6
 # Configure the webserver, if you installed pgadmin4-web:
 # /usr/pgadmin4/bin/setup-web.sh
 
-COPY --from=dpage/pgadmin4:latest /pgadmin4       /usr/local/pgadmin4
 #COPY --from=dpage/pgadmin4:latest /venv           /venv
 # COPY --from=dpage/pgadmin4:latest /entrypoint.sh  /usr/local/pgadmin/entrypoint.sh
 # COPY --from=dpage/pgadmin4:latest /pgadmin4       /usr/local/pgadmin/pgadmin4
@@ -142,32 +144,18 @@ COPY --from=dpage/pgadmin4:latest /pgadmin4       /usr/local/pgadmin4
 
 # cloudbeaver ################################################################
 
+COPY --from=cloudbeaver  /opt/cloudbeaver  /opt/cloudbeaver
+COPY --from=cloudbeaver  /opt/java         /opt/java
 
-# apt-get update \
-# && apt-get install -y \
-# debian-keyring \
-# debian-archive-keyring \
-# apt-transport-https \
-# && curl -1sLf 'https://dl.cloudsmith.io/public/caddy/xcaddy/gpg.key' | apt-key add - \
-# && curl -1sLf 'https://dl.cloudsmith.io/public/caddy/xcaddy/debian.deb.txt' | tee /etc/apt/sources.list.d/caddy-xcaddy.list \
-# && apt-get update \
-# && apt-get install -y xcaddy
+RUN mkdir -p /etc/skel/.local/share \
+    && cp -a /opt/cloudbeaver/workspace/ /etc/skel/.local/share/cloudbeaver
 
-# https://caddyserver.com/api/download?os=linux&arch=amd64&p=github.com%2Fgreenpau%2Fcaddy-auth-jwt&p=github.com%2Fcaddyserver%2Fjsonc-adapter&p=github.com%2Fmholt%2Fcaddy-l4&p=github.com%2Fcaddyserver%2Freplace-response&idempotency=87871957022723
+RUN [ ! -d "/etc/skel/.local/share/cloudbeaver/.metadata" ] \
+    && mkdir -p /etc/skel/.local/share/cloudbeaver/GlobalConfiguration/.dbeaver \
+    && cp /opt/cloudbeaver/conf/initial-data-sources.conf /etc/skel/.local/share/cloudbeaver/GlobalConfiguration/.dbeaver/data-sources.json
 
+COPY cloudbeaver/cloudbeaver-run /etc/services.d/cloudbeaver/run
+# EXPOSE 8978
 
-
-# nginx for it's wsgi for pgadmin4
-# curl -1sLf  "https://nginx.org/keys/nginx_signing.key" | apt-key add - \
-# && echo "deb https://nginx.org/packages/mainline/ubuntu/ focal nginx" > /etc/apt/sources.list.d/nginx.list \
-# && echo "deb-src https://nginx.org/packages/mainline/ubuntu/ focal nginx" >> /etc/apt/sources.list.d/nginx.list \
-# && apt-get update \
-# && apt-get install -y nginx 
-
-# # ...or... just use gunicorn?
-# apt-get update \
-# && apt-get install -y gunicorn \
-
-# {gunicorn} /venv/bin/python3 /venv/bin/gunicorn --timeout 86400 --bind [::]:80 -w 1 --threads 25 --access-logfile - -c gunicorn_config.py run_pgadmin:app
 
 
