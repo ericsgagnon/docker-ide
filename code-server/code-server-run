@@ -10,20 +10,20 @@ export CODE_SERVER_DISABLE_UPDATE_CHECK=${CODE_SERVER_DISABLE_UPDATE_CHECK:=true
 export CODE_SERVER_BIND_ADDR=${CODE_SERVER_BIND_ADDR:='0.0.0.0:8080'}
 
 CODE_SERVER_CLI_ARGS=\
-${CODE_SERVER_AUTH:-"                 --auth                 ${CODE_SERVER_AUTH}                 "}\
-${CODE_SERVER_CERT:-"                 --cert                 ${CODE_SERVER_CERT}                 "}\
-${CODE_SERVER_CERT_HOST:-"            --cert-host            ${CODE_SERVER_CERT_HOST}            "}\
-${CODE_SERVER_CERT_KEY:-"             --cert-key             ${CODE_SERVER_CERT_KEY}             "}\
-${CODE_SERVER_DISABLE_TELEMETRY:-"    --disable-telemetry                                        "}\
-${CODE_SERVER_DISABLE_UPDATE_CHECK:-" --disable-update-check                                     "}\
-${CODE_SERVER_BIND_ADDR:-"            --bind-addr            ${CODE_SERVER_BIND_ADDR}            "}\
-${CODE_SERVER_CONFIG:-"               --config               ${CODE_SERVER_CONFIG}               "}\
-${CODE_SERVER_SOCKET:-"               --socket               ${CODE_SERVER_SOCKET}               "}\
-${CODE_SERVER_USER_DATA_DIR:-"        --user-data-dir        ${CODE_SERVER_USER_DATA_DIR}        "}\
-${CODE_SERVER_EXTENSIONS_DIR:-"       --extensions-dir       ${CODE_SERVER_EXTENSIONS_DIR}       "}\
-${CODE_SERVER_ENABLE_PROPOSED_API:-"  --enable-proposed-api  ${CODE_SERVER_ENABLE_PROPOSED_API}  "}\
-${CODE_SERVER_PROXY_DOMAIN:-"         --proxy-domain         ${CODE_SERVER_PROXY_DOMAIN}         "}\
-${CODE_SERVER_LINK:-"                 --link                 ${CODE_SERVER_LINK}                 "}
+${CODE_SERVER_AUTH:+"                 --auth                 ${CODE_SERVER_AUTH}                 "}\
+${CODE_SERVER_CERT:+"                 --cert                 ${CODE_SERVER_CERT}                 "}\
+${CODE_SERVER_CERT_HOST:+"            --cert-host            ${CODE_SERVER_CERT_HOST}            "}\
+${CODE_SERVER_CERT_KEY:+"             --cert-key             ${CODE_SERVER_CERT_KEY}             "}\
+${CODE_SERVER_DISABLE_TELEMETRY:+"    --disable-telemetry                                        "}\
+${CODE_SERVER_DISABLE_UPDATE_CHECK:+" --disable-update-check                                     "}\
+${CODE_SERVER_BIND_ADDR:+"            --bind-addr            ${CODE_SERVER_BIND_ADDR}            "}\
+${CODE_SERVER_CONFIG:+"               --config               ${CODE_SERVER_CONFIG}               "}\
+${CODE_SERVER_SOCKET:+"               --socket               ${CODE_SERVER_SOCKET}               "}\
+${CODE_SERVER_USER_DATA_DIR:+"        --user-data-dir        ${CODE_SERVER_USER_DATA_DIR}        "}\
+${CODE_SERVER_EXTENSIONS_DIR:+"       --extensions-dir       ${CODE_SERVER_EXTENSIONS_DIR}       "}\
+${CODE_SERVER_ENABLE_PROPOSED_API:+"  --enable-proposed-api  ${CODE_SERVER_ENABLE_PROPOSED_API}  "}\
+${CODE_SERVER_PROXY_DOMAIN:+"         --proxy-domain         ${CODE_SERVER_PROXY_DOMAIN}         "}\
+${CODE_SERVER_LINK:+"                 --link                 ${CODE_SERVER_LINK}                 "}
 
 echo "-----------------------------------------------------------"
 echo "code-server:"

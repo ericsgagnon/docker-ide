@@ -38,9 +38,9 @@ route /jupyter/* {
 
 redir /cloudbeaver /cloudbeaver/
 route /cloudbeaver/* {
-  uri strip_prefix /cloudbeaver
+  #uri strip_prefix /cloudbeaver
   reverse_proxy {
     to 127.0.0.1:8978
-    header_down  Location (?:^.+://)?(?:[^:/]+)?(?::[^/]+)?/  ./
+    #header_down  Location (?:^.+://)?(?:[^:/]+)?(?::[^/]+)?/  ./
   }
 }

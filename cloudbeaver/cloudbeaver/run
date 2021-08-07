@@ -38,8 +38,8 @@ ln -sfn ${user_workspacelocation} ${CB_SERVER_WORKSPACELOCATION}
 
 mkdir -p ${CB_SERVER_WORKSPACELOCATION}/.data
 
-        # serverName: \"${CB_SERVER_NAME:-Cloud Beaver}\",
-        # serverURL: \"${CB_SERVER_SERVERURL:-${CB_SERVER_URL}}\",
+        #serverName: \"${CB_SERVER_NAME:-Cloud Beaver}\",
+        #serverURL: \"${CB_SERVER_SERVERURL:-${CB_SERVER_URL}}\",
 # populate the .cloudbeaver.runtime.conf file
 cloudbeaver_server_runtime_conf_file=${CB_SERVER_WORKSPACELOCATION}/.data/.cloudbeaver.runtime.conf
 if [[ ! -f ${cloudbeaver_server_runtime_conf_file} ]] ; then
@@ -133,23 +133,22 @@ export CB_CLI_ARGS=\
 ${CB_CLI_ARGS_ADDITIONAL_ARGS}
 
 
+chown -R root:root ${user_workspacelocation}
+chown -R root:root ${CB_SERVER_WORKSPACELOCATION}
 
+# "export CB_SERVER_NAME=${CB_SERVER_NAME} "\
+# "&& export CB_SERVER_URL=${CB_SERVER_URL} "\
+# "&& export CB_ADMIN_NAME=${CB_ADMIN_NAME} "\
+# "&& export CB_ADMIN_PASSWORD=${CB_ADMIN_PASSWORD} "\
 export CB_CLI_COMMAND=\
-"export CB_SERVER_NAME=${CB_SERVER_NAME} "\
-"&& export CB_SERVER_URL=${CB_SERVER_URL} "\
-"&& export CB_ADMIN_NAME=${CB_ADMIN_NAME} "\
-"&& export CB_ADMIN_PASSWORD=${CB_ADMIN_PASSWORD} "\
-"&& cd ${CLOUDBEAVER_HOME} "\
+" cd ${CLOUDBEAVER_HOME} "\
 "&& java ${CB_CLI_ARGS} "
 
 echo "Starting Cloudbeaver Server"
 #su - ${USER_NAME} -c "${CB_CLI_COMMAND}"
-
-
-chown -R root:root ${user_workspacelocation}
-chown -R root:root ${CB_SERVER_WORKSPACELOCATION}
-eval ${CB_CLI_COMMAND}
-
+# echo ${CB_CLI_COMMAND}
+# ${CB_CLI_COMMAND}
+eval "cd ${CLOUDBEAVER_HOME} && java ${CB_CLI_ARGS}"
 
 # devspace
 # docker run -dit --name cloudbeaver -p 8978:8978 -e CB_SERVER_NAME="CloudBeaver" -e CB_SERVER_URL="*" -e CB_ADMIN_NAME="cbadmin" -e CB_ADMIN_PASSWORD="password" dbeaver/cloudbeaver:latest

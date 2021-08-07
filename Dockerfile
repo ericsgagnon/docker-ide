@@ -137,14 +137,13 @@ RUN curl https://www.pgadmin.org/static/packages_pgadmin_org.pub | sudo apt-key 
 COPY --from=cloudbeaver  /opt/cloudbeaver  /opt/cloudbeaver
 COPY --from=cloudbeaver  /opt/java         /opt/java
 
-RUN mkdir -p /etc/skel/.local/share \
-    && cp -a /opt/cloudbeaver/workspace/ /etc/skel/.local/share/cloudbeaver
+RUN mkdir -p /etc/skel/.local/share/cloudbeaver
 
-RUN [ ! -d "/etc/skel/.local/share/cloudbeaver/.metadata" ] \
-    && mkdir -p /etc/skel/.local/share/cloudbeaver/GlobalConfiguration/.dbeaver \
-    && cp /opt/cloudbeaver/conf/initial-data-sources.conf /etc/skel/.local/share/cloudbeaver/GlobalConfiguration/.dbeaver/data-sources.json
+# RUN [ ! -d "/etc/skel/.local/share/cloudbeaver/.metadata" ] \
+#     && mkdir -p /etc/skel/.local/share/cloudbeaver/GlobalConfiguration/.dbeaver \
+#     && cp /opt/cloudbeaver/conf/initial-data-sources.conf /etc/skel/.local/share/cloudbeaver/GlobalConfiguration/.dbeaver/data-sources.json
 
-COPY cloudbeaver/.product.runtime.conf /etc/skel/.local/share/cloudbeaver/.data/.product.runtime.conf
+# COPY cloudbeaver/.product.runtime.conf /etc/skel/.local/share/cloudbeaver/.data/.product.runtime.conf
 COPY cloudbeaver/cloudbeaver-run /etc/services.d/cloudbeaver/run
 # EXPOSE 8978
 
