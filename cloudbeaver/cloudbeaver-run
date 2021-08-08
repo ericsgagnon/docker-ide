@@ -5,7 +5,7 @@ source /etc/profile.d/0000-env.sh
 eval $(cat /etc/cont-init.d/001-userconf.sh  | grep -E "^export USER_NAME" | envsubst)
 
 # https://cloudbeaver.io/docs/Server-configuration/
-export CB_SERVER_NAME=${CB_SERVER_NAME:="Cloud Beaver"}
+export CB_SERVER_NAME=${CB_SERVER_NAME:="CloudBeaver"}
 export CB_SERVER_URL=${CB_SERVER_URL:="http://localhost:8978"}
 export CB_ADMIN_NAME=${CB_ADMIN_NAME:=${USER_NAME}} 
 export CB_ADMIN_PASSWORD=${CB_ADMIN_PASSWORD:=${PASSWORD:-"password"}}
@@ -20,14 +20,17 @@ export CB_SERVER_WORKSPACELOCATION=${CB_SERVER_WORKSPACELOCATION:=/opt/cloudbeav
 user_xdg_data_home=$(su - ${USER_NAME} -c 'echo $XDG_DATA_HOME')
 user_workspacelocation=${user_xdg_data_home}'/cloudbeaver'
 mkdir -p ${user_workspacelocation}
-chmod -R 644 ${user_workspacelocation}
-chown -R ${USER_NAME}:${GROUP_NAME} ${user_workspacelocation}
+# chmod -R 644 ${user_workspacelocation}
+# chown -R ${USER_NAME}:${GROUP_NAME} ${user_workspacelocation}
 # if symbolic link already exists, remove & replace it
 [ -h ${CB_SERVER_WORKSPACELOCATION} ] && rm -f ${CB_SERVER_WORKSPACELOCATION}
+# remove the workspace directory, if it exists
 rm -rf ${CB_SERVER_WORKSPACELOCATION}
-# if first run, make sure workspace directory doesn't exist
-[ ! -d "${CB_SERVER_WORKSPACELOCATION}/.metadata" ] && rm -rf ${CB_SERVER_WORKSPACELOCATION}
+# symlink to the user's persistent workspacelocation
 ln -sfn ${user_workspacelocation} ${CB_SERVER_WORKSPACELOCATION}
+
+# if first run, make sure workspace directory doesn't exist
+#[ ! -d "${CB_SERVER_WORKSPACELOCATION}/.metadata" ] && rm -rf ${CB_SERVER_WORKSPACELOCATION}
 
 
 
@@ -50,7 +53,7 @@ echo \
         workspaceLocation: \"${CB_SERVER_WORKSPACELOCATION:-workspace}\",
         rootURI: \"${CB_SERVER_ROOTURI:-/cloudbeaver}\",
         serviceURI: \"${CB_SERVER_SERVICEURI:-/api/}\",
-        expireSessionAfterPeriod: ${CBV_SERVER_EXPIRESESSIONAFTERPERIOD:-3600000}
+        expireSessionAfterPeriod: ${CB_SERVER_EXPIRESESSIONAFTERPERIOD:-3600000}
     },
     app: {
         anonymousAccessEnabled: ${CB_APP_ANONYMOUSACCESSENABLED:-true},
@@ -77,7 +80,7 @@ echo \
     core: {
         // User defaults
         user: {
-            defaultTheme: \"default\",
+            defaultTheme: \"dark\",
             defaultLanguage: \"en\"
         },
         app: {
@@ -112,16 +115,14 @@ fi
 cd ${CLOUDBEAVER_HOME} \
 && [ ! -d "${CB_SERVER_WORKSPACELOCATION}/.metadata" ] \
 && mkdir -p ${CB_SERVER_WORKSPACELOCATION}/GlobalConfiguration/.dbeaver \
-&& cp -n conf/initial-data-sources.conf ${CB_SERVER_WORKSPACELOCATION}/GlobalConfiguration/.dbeaver/data-sources.json
-
-
-
+&& cp -n ${CLOUDBEAVER_HOME}/conf/initial-data-sources.conf ${CB_SERVER_WORKSPACELOCATION}/GlobalConfiguration/.dbeaver/data-sources.json
 
 # mkdir -p ${CB_SERVER_WORKSPACELOCATION}
-chown -R ${USER_NAME:-liveware}:${GROUP_NAME:-liveware} ${CB_SERVER_WORKSPACELOCATION}
-chown -R ${USER_NAME:-liveware}:${GROUP_NAME:-liveware} ${CLOUDBEAVER_HOME}
-chown -R ${USER_NAME}:${GROUP_NAME} ${user_workspacelocation} 
+# chown -R ${USER_NAME:-liveware}:${GROUP_NAME:-liveware} ${CB_SERVER_WORKSPACELOCATION}
+# chown -R ${USER_NAME:-liveware}:${GROUP_NAME:-liveware} ${CLOUDBEAVER_HOME}
+# chown -R ${USER_NAME}:${GROUP_NAME} ${user_workspacelocation} 
 
+# build command args
 export launcherJar=( ${CLOUDBEAVER_HOME}/server/plugins/org.eclipse.equinox.launcher*.jar )
 export CB_CLI_ARGS=\
 " -jar "${CB_CLI_ARGS_JAR:-" ${launcherJar} "}\
@@ -132,73 +133,25 @@ export CB_CLI_ARGS=\
 " -vmargs "${CB_CLI_ARGS_VMARGS:-" -Xmx2048M "}\
 ${CB_CLI_ARGS_ADDITIONAL_ARGS}
 
+# build command
+export CB_CLI_COMMAND=${CB_CLI_COMMAND:="cd ${CLOUDBEAVER_HOME} && java ${CB_CLI_ARGS}"}
 
+# chown -R root:root ${user_workspacelocation}
+# chown -R root:root ${CB_SERVER_WORKSPACELOCATION}
+chown -R ${USER_NAME}:${GROUP_NAME} ${user_workspacelocation}
+chown -R ${USER_NAME}:${GROUP_NAME} ${CB_SERVER_WORKSPACELOCATION}
+chown -R ${USER_NAME}:${GROUP_NAME} ${CLOUDBEAVER_HOME}
+# eval "${CB_CLI_COMMAND}"
 
-export CB_CLI_COMMAND=\
-"export CB_SERVER_NAME=${CB_SERVER_NAME} "\
-"&& export CB_SERVER_URL=${CB_SERVER_URL} "\
-"&& export CB_ADMIN_NAME=${CB_ADMIN_NAME} "\
-"&& export CB_ADMIN_PASSWORD=${CB_ADMIN_PASSWORD} "\
-"&& cd ${CLOUDBEAVER_HOME} "\
-"&& java ${CB_CLI_ARGS} "
+su - ${USER_NAME} -c "{
+export CB_SERVER_NAME=${CB_SERVER_NAME} \
+&& export CB_SERVER_URL=${CB_SERVER_URL} \
+&& export CB_ADMIN_NAME=${CB_ADMIN_NAME} \
+&& export CB_ADMIN_PASSWORD=${CB_ADMIN_PASSWORD} \
+&& echo '---------------------------------------------------------------------' \
+&& echo 'CloudBeaver User: $(id)' \
+&& echo 'Cloudbeaver Command: '\"${CB_CLI_COMMAND}\" \
+&& ${CB_CLI_COMMAND} \
+&& echo '---------------------------------------------------------------------' \
+; }"
 
-echo "Starting Cloudbeaver Server"
-#su - ${USER_NAME} -c "${CB_CLI_COMMAND}"
-
-
-chown -R root:root ${user_workspacelocation}
-chown -R root:root ${CB_SERVER_WORKSPACELOCATION}
-eval ${CB_CLI_COMMAND}
-
-
-# devspace
-# docker run -dit --name cloudbeaver -p 8978:8978 -e CB_SERVER_NAME="CloudBeaver" -e CB_SERVER_URL="*" -e CB_ADMIN_NAME="cbadmin" -e CB_ADMIN_PASSWORD="password" dbeaver/cloudbeaver:latest
-# docker run -dit --name cloudbeaver -p 8978:8978 -e CB_SERVER_NAME="CloudBeaver" -e CB_SERVER_URL="*" -e CB_ADMIN_NAME="cbadmin" -e CB_ADMIN_PASSWORD="password" --entrypoint="/bin/bash" dbeaver/cloudbeaver:latest
-
-# runtime configuration of product.conf
-# (workspace)/.data/.product.runtime.conf
-# cloudbeaver_product_runtime_conf_file=${CB_SERVER_WORKSPACELOCATION}/.data/.product.runtime.conf
-# {
-#     "core": {
-#         "user": {
-#             "defaultTheme": "dark"
-#         }
-#     }
-#  "plugin_data_export": {
-#     "disabled": false
-#  }
-# }
-# echo \
-# '// Product runtime configuration
-# {
-#     core: {
-#         // User defaults
-#         user: {
-#             defaultTheme: "default",
-#             defaultLanguage: "en"
-#         },
-#         app: {
-#             // Log viewer config
-#             logViewer: {
-#                 refreshTimeout: 3000,
-#                 logBatchSize: 1000,
-#                 maxLogRecords: 2000,
-#                 maxFailedRequests: 3
-#             },
-#             navigationTree: {
-#                 childrenLimit: 10000
-#             }
-#         }
-#     },
-#     plugin_data_spreadsheet_new: {
-#         hidden: false
-#     },
-#     plugin_data_export: {
-#         disabled: false
-#     },
-#     // Notifications config
-#     core_events: {
-#         notificationsPool: 5
-#     }
-# }
-# ' > ${cloudbeaver_product_runtime_conf_file}
