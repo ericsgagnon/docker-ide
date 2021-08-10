@@ -10,42 +10,31 @@ export CB_SERVER_URL=${CB_SERVER_URL:="http://localhost:8978"}
 export CB_ADMIN_NAME=${CB_ADMIN_NAME:=${USER_NAME}} 
 export CB_ADMIN_PASSWORD=${CB_ADMIN_PASSWORD:=${PASSWORD:-"password"}}
 
-# cloudbeaver appears to colocate config overrides and user state, using XDG_DATA_HOME for both
-#export CB_SERVER_WORKSPACELOCATION=${CB_SERVER_WORKSPACELOCATION:=${user_workspacelocation}}
+# cloudbeaver appears to colocate config overrides and user state under one directory, called workspace
+# and it doesn't seem to fully support changing workspace location:
+# using XDG_DATA_HOME for both, and symlinking 
+# ${CLOUDBEAVER_HOME}/workspace to ${XDG_DATA_HOME}/cloudbeaver
 export CLOUDBEAVER_HOME=${CLOUDBEAVER_HOME:=/opt/cloudbeaver}
 export CB_SERVER_CONF_FILE=${CB_SERVER_CONF_FILE:="${CLOUDBEAVER_HOME}/conf/cloudbeaver.conf"}
 export CB_SERVER_WORKSPACELOCATION=${CB_SERVER_WORKSPACELOCATION:=/opt/cloudbeaver/workspace}
-
-# cloudbeaver doesn't seem to like changing workspace location, using symlink instead
 user_xdg_data_home=$(su - ${USER_NAME} -c 'echo $XDG_DATA_HOME')
 user_workspacelocation=${user_xdg_data_home}'/cloudbeaver'
 mkdir -p ${user_workspacelocation}
-# chmod -R 644 ${user_workspacelocation}
-# chown -R ${USER_NAME}:${GROUP_NAME} ${user_workspacelocation}
-# if symbolic link already exists, remove & replace it
-[ -h ${CB_SERVER_WORKSPACELOCATION} ] && rm -f ${CB_SERVER_WORKSPACELOCATION}
-# remove the workspace directory, if it exists
+
+# updates and restarts with new containers already have a default workspace directory, 
+# we need to need to make sure the workspace directory isn't present so we can create the link.
 rm -rf ${CB_SERVER_WORKSPACELOCATION}
-# symlink to the user's persistent workspacelocation
 ln -sfn ${user_workspacelocation} ${CB_SERVER_WORKSPACELOCATION}
 
-# if first run, make sure workspace directory doesn't exist
-#[ ! -d "${CB_SERVER_WORKSPACELOCATION}/.metadata" ] && rm -rf ${CB_SERVER_WORKSPACELOCATION}
+# cloudbeaver likes to overwrite the runtime file with defaults, so rooturi disappears when
+# you restart.
+sed -E -i "s|rootURI:.*|rootURI: \"${CB_SERVER_ROOTURI:-/cloudbeaver}\",|g" ${CB_SERVER_CONF_FILE}
 
-
-
-# it looks like the only way to change workspace location is by 
-# editing the server config file (/opt/cloudbeaver/conf/cloudbeaver.conf by default)
-#cb_server_workspacelocation_sed_expression="sed -i -E 's#(workspaceLocation: \\\")[^\\\"]+#\1${CB_SERVER_WORKSPACELOCATION}#' ${CB_SERVER_CONF_FILE}"
-#eval ${cb_server_workspacelocation_sed_expression}
-
+# populate runtime files
 mkdir -p ${CB_SERVER_WORKSPACELOCATION}/.data
-
-        # serverName: \"${CB_SERVER_NAME:-Cloud Beaver}\",
-        # serverURL: \"${CB_SERVER_SERVERURL:-${CB_SERVER_URL}}\",
 # populate the .cloudbeaver.runtime.conf file
 cloudbeaver_server_runtime_conf_file=${CB_SERVER_WORKSPACELOCATION}/.data/.cloudbeaver.runtime.conf
-if [[ ! -f ${cloudbeaver_server_runtime_conf_file} ]] ; then
+#if [[ ! -f ${cloudbeaver_server_runtime_conf_file} ]] ; then
 echo \
 "// this file is written by s6 (via /etc/services.d/cloudbeaver/run)
 {
@@ -69,7 +58,7 @@ echo \
     }
 }
 " > ${cloudbeaver_server_runtime_conf_file}
-fi
+#fi
 
 # populate the .product.runtime.conf file
 cloudbeaver_product_runtime_conf_file=${CB_SERVER_WORKSPACELOCATION}/.data/.product.runtime.conf

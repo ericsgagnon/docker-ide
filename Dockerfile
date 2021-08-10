@@ -64,6 +64,7 @@ FROM code-server as caddy-server
 COPY --from=caddy-builder /usr/bin/caddy /usr/bin/caddy
 COPY caddy-server/caddy-server-run /etc/services.d/caddy-server/run
 COPY caddy-server/Caddyfile /etc/caddy/Caddyfile
+COPY caddy-server/index.html /var/www/html/index.html
 
 EXPOSE 80 443
 
@@ -138,13 +139,6 @@ COPY --from=cloudbeaver  /opt/cloudbeaver  /opt/cloudbeaver
 COPY --from=cloudbeaver  /opt/java         /opt/java
 RUN mkdir -p /etc/skel/.local/share/cloudbeaver
 COPY cloudbeaver/cloudbeaver-run /etc/services.d/cloudbeaver/run
-
-# RUN [ ! -d "/etc/skel/.local/share/cloudbeaver/.metadata" ] \
-#     && mkdir -p /etc/skel/.local/share/cloudbeaver/GlobalConfiguration/.dbeaver \
-#     && cp /opt/cloudbeaver/conf/initial-data-sources.conf /etc/skel/.local/share/cloudbeaver/GlobalConfiguration/.dbeaver/data-sources.json
-
-# COPY cloudbeaver/.product.runtime.conf /etc/skel/.local/share/cloudbeaver/.data/.product.runtime.conf
-# EXPOSE 8978
 
 
 

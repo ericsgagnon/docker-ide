@@ -44,3 +44,11 @@ route /cloudbeaver/* {
     #header_down  Location (?:^.+://)?(?:[^:/]+)?(?::[^/]+)?/  ./
   }
 }
+
+route /* {
+  file_server {
+    root /var/www/html
+
+    browse 
+  }
+}
