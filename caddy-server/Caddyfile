@@ -29,10 +29,10 @@ route /pgadmin/* {
 
 redir /jupyter /jupyter/
 route /jupyter/* {
-  uri strip_prefix /jupyter
+  #uri strip_prefix /jupyter
   reverse_proxy {
     to 127.0.0.1:8888
-    header_down  Location (?:^.+://)?(?:[^:/]+)?(?::[^/]+)?/  ./
+    #header_down  Location (?:^.+://)?(?:[^:/]+)?(?::[^/]+)?/  ./
   }
 }
 

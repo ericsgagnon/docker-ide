@@ -1,0 +1,97 @@
+#!/bin/bash
+
+# grab the username
+source /etc/profile.d/0000-env.sh
+eval $(cat /etc/cont-init.d/001-userconf.sh  | grep -E "^export USER_NAME" | envsubst)
+eval $(cat /etc/cont-init.d/001-userconf.sh  | grep -E "^export GROUP_NAME" | envsubst)
+
+
+mkdir -p /opt/jupyter \
+&& python -m venv /opt/jupyter/venv \
+&& source /opt/jupyter/venv/bin/activate \
+&& python -m pip install --upgrade pip \
+&& pip install -U \
+jupyterlab \
+jupyterlab-git \
+
+
+
+chown -R ${USER_NAME}:${GROUP_NAME} /opt/jupyter
+
+
+
+
+
+
+su - liveware -c "
+source \${NVM_DIR}/nvm.sh
+jupyter-lab \
+--ServerApp.answer_yes=True \
+--ServerApp.autoreload=True \
+--ServerApp.open_browser=False \
+--ExtensionApp.open_browser=False \
+--LabApp.watch=True \
+--ServerApp.allow_remote_access=True \
+--LabApp.extensions_in_dev_mode=True \
+--ServerApp.disable_check_xsrf=True \
+--ServerApp.token='' \
+--ServerApp.base_url='/jupyter' \
+--ServerApp.ip='localhost' \
+--ServerApp.port='8888'
+"
+--ServerApp.root_dir='/home/liveware' \
+
+--ServerApp.default_url='/jupyter' \
+
+
+--LabApp.app_dir='/home/liveware'
+
+
+--Application.log_level=${JUPYTER_LOG_LEVEL:-${LOG_LEVEL:-'WARN'}}
+--JupyterApp.config_file=${JUPYTER_CONFIG_FILE}
+
+
+
+
+jupyter-lab \
+--ServerApp.answer_yes=True \
+--ServerApp.autoreload=True \
+--ServerApp.open_browser=False \
+--ExtensionApp.open_browser=False \
+--LabApp.watch=True \
+--ServerApp.allow_remote_access=True \
+--LabApp.extensions_in_dev_mode=True \
+--ServerApp.disable_check_xsrf=True \
+--ServerApp.token='' \
+--ServerApp.base_url='/jupyter' \
+--ServerApp.default_url='/jupyter' \
+--Application.log_level=${JUPYTER_LOG_LEVEL:-${LOG_LEVEL:-'WARN'}}
+--JupyterApp.config_file=${JUPYTER_CONFIG_FILE}
+--ServerApp.ip=${JUPYTER_IP:-'localhost'}
+--ServerApp.port=${JUPYTER_PORT:-'8888'}
+--ServerApp.root_dir=${HOME}
+--LabApp.app_dir=${HOME}
+
+
+
+
+
+
+
+
+# --ServerApp.custom_display_url = ''
+
+## The default URL to redirect to from `/`
+#  Default: '/'
+
+--generate-config
+    generate default config file
+    Equivalent to: [--JupyterApp.generate_config=True]
+--dev-mode
+    Start the app in dev mode for running from source.
+    Equivalent to: [--LabApp.dev_mode=True]
+--splice-source
+    Splice source packages into app directory.
+    Equivalent to: [--LabApp.splice_source=True]
+
+

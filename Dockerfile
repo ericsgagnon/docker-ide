@@ -76,8 +76,10 @@ COPY --from=pgadmin      /usr/local/pgsql-11  /usr/local/pgsql/pgsql-11
 COPY --from=pgadmin      /usr/local/pgsql-10  /usr/local/pgsql/pgsql-10
 COPY --from=pgadmin      /usr/local/pgsql-9.6 /usr/local/pgsql/pgsql-9.6
 COPY --from=pgadmin      /pgadmin4            /usr/local/pgadmin4
+COPY pgadmin/pgadmin-run /etc/services.d/pgadmin/run
 
-# Install the public key for the repository (if not done previously):
+
+# TODO: cleanup - we only need one method
 RUN curl https://www.pgadmin.org/static/packages_pgadmin_org.pub | sudo apt-key add \
     && echo "deb https://ftp.postgresql.org/pub/pgadmin/pgadmin4/apt/$(lsb_release -cs) pgadmin4 main" > /etc/apt/sources.list.d/pgadmin4.list \
     && apt-get update \
@@ -86,6 +88,15 @@ RUN curl https://www.pgadmin.org/static/packages_pgadmin_org.pub | sudo apt-key 
     pgadmin4-web \
     gunicorn \
     musl-dev
+
+RUN cd /usr/local/pgadmin4 \
+    && python -m venv venv \
+    && . venv/bin/activate \
+    && cd venv \
+    && wget https://raw.githubusercontent.com/postgres/pgadmin4/master/requirements.txt \
+    && pip install -r requirements.txt \
+    && pip install gunicorn
+
 
 #ln -s /usr/lib/x86_64-linux-musl/libc.so /lib/libc.musl-x86_64.so.1
 
