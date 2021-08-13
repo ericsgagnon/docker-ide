@@ -63,8 +63,9 @@ FROM code-server as caddy-server
 
 COPY --from=caddy-builder /usr/bin/caddy /usr/bin/caddy
 COPY caddy-server/caddy-server-run /etc/services.d/caddy-server/run
-COPY caddy-server/Caddyfile /etc/caddy/Caddyfile
-COPY caddy-server/index.html /var/www/html/index.html
+COPY caddy-server/Caddyfile        /etc/caddy/Caddyfile
+COPY caddy-server/site/*           /var/www/html/
+COPY caddy-server/site/images/*    /var/www/html/images/
 
 EXPOSE 80 443
 
@@ -79,7 +80,8 @@ COPY --from=pgadmin      /pgadmin4            /usr/local/pgadmin4
 COPY pgadmin/pgadmin-run /etc/services.d/pgadmin/run
 
 
-# TODO: cleanup - we only need one method
+# TODO: cleanup - we only need one methoda
+
 RUN curl https://www.pgadmin.org/static/packages_pgadmin_org.pub | sudo apt-key add \
     && echo "deb https://ftp.postgresql.org/pub/pgadmin/pgadmin4/apt/$(lsb_release -cs) pgadmin4 main" > /etc/apt/sources.list.d/pgadmin4.list \
     && apt-get update \

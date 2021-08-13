@@ -45,10 +45,43 @@ route /cloudbeaver/* {
   }
 }
 
+redir /files /files/
+route /files/* {
+  uri strip_prefix /files
+  file_server {
+    root  /home/liveware
+    browse
+  }
+}
+
+@proxyport {
+  path_regexp proxyport ^/port/([0-9]+)/(.*)
+}
+@proxyportstub {
+  path_regexp proxyportstub ^/port/[0-9]+$
+}
+
+redir @proxyportstub {re.proxyportstub.0}/
+handle @proxyport {
+  uri path_regexp ^/port/[0-9]+/?  /
+  reverse_proxy {
+    to localhost:{re.proxyport.1}
+    header_down  Location (?:^.+://)?(?:[^:/]+)?(?::[^/]+)?/  ./
+  }
+}
+
+
+redir /port /port/
+route /port/ {
+  respond "you need to enter a port number - ie /port/[port_number]/"
+}
+
 route /* {
   file_server {
     root /var/www/html
 
-    browse 
+    browse
   }
 }
+
+

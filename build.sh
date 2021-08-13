@@ -7,7 +7,7 @@ build_tag="${VERSION:=dev}"
 echo "Build Tag: ${build_tag}"
 
 
-docker build --pull --no-cache=true -t ericsgagnon/${image_name}:${build_tag}  -f Dockerfile . 
+docker build --pull --no-cache=true -t ericsgagnon/${image_name}:${build_tag} --build-arg=VERSION=${build_tag} -f Dockerfile . 
 #docker build --pull -t ericsgagnon/${image_name}:${build_tag}  -f Dockerfile . 
 build_exit_code=$?
 
