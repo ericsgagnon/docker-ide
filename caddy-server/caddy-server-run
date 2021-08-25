@@ -19,13 +19,18 @@ CADDY_SERVER_CONFIG=${CADDY_SERVER_CONFIG:='/etc/caddy/Caddyfile'}
 CADDY_SERVER_CLI_ARGS=${CADD_SERVER_CLI_ARGS:=" --config ${CADDY_SERVER_CONFIG} --watch "}
 CADDY_SERVER_CLI_CMD=${CADDY_SERVER_CLI_CMD:=" $(which caddy) run ${CADDY_SERVER_CLI_ARGS}" }
 
-su - ${USER_NAME} -c "{
-echo '---------------------------------------------------------------------' \
-&& echo 'Caddy User: $(id)' \
-&& echo 'Caddy Command: '${CADDY_SERVER_CLI_CMD} \
-&& ${CADDY_SERVER_CLI_CMD} \
-&& echo '---------------------------------------------------------------------' \
-; }"
+echo 'Caddy User: $(id)' 
+echo "Caddy Command: ${CADDY_SERVER_CLI_CMD}" 
+${CADDY_SERVER_CLI_CMD}
+
+
+# su - ${USER_NAME} -c "{
+# echo '---------------------------------------------------------------------' \
+# && echo 'Caddy User: $(id)' \
+# && echo 'Caddy Command: '${CADDY_SERVER_CLI_CMD} \
+# && ${CADDY_SERVER_CLI_CMD} \
+# && echo '---------------------------------------------------------------------' \
+# ; }"
 
 # {
 #     "----------------------------------------------------------------------"
