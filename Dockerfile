@@ -16,6 +16,8 @@ RUN xcaddy build \
 
 FROM ericsgagnon/ide-base:${VERSION} as base
 
+# SHELL [ "/bin/bash", "-c" ]
+
 # rstudio server #############################################################
 FROM base as rstudio
 # capture workspace in the image for reference
@@ -29,10 +31,16 @@ COPY . ${WORKSPACE}/
 RUN apt-get update && apt-get upgrade -y \
     && apt-get install -y gdebi-core \
     && cd /tmp \
-    && export RSTUDIO_VERSION=$(wget -qO - https://rstudio.com/products/rstudio/download-server/debian-ubuntu/ | grep -oP "(?<=rstudio-server-)[0-9]\.[0-9]\.[0-9]+" | sort | tail -n 1) \
-    && export RSTUDIO_URL="https://s3.amazonaws.com/rstudio-ide-build/server/bionic/amd64/rstudio-server-${RSTUDIO_VERSION}-amd64.deb" \
+    && export RSTUDIO_URL=$(wget -qO - https://rstudio.com/products/rstudio/download-server/debian-ubuntu/ | grep -oP "https.*server.*bionic.*rstudio-server-.*\.deb" | sort | tail -n 1) \
     && wget -O rstudio-server.deb $RSTUDIO_URL \
-    && apt-get install -y ./rstudio-server.deb
+    && apt-get install -y ./rstudio-server.deb \
+    && mkdir -p /var/run/rstudio-server \
+    && chmod 1777 /var/run/rstudio-server
+
+    # && export RSTUDIO_VERSION=$(wget -qO - https://rstudio.com/products/rstudio/download-server/debian-ubuntu/ | grep -oP "(?<=rstudio-server-)[0-9]\.[0-9]\.[0-9]+" | sort | tail -n 1) \
+    # && export RSTUDIO_DEB_FILE=$(wget -qO - https://rstudio.com/products/rstudio/download-server/debian-ubuntu/ | grep -oP "rstudio-server-.*\.deb" | sort | tail -n 1) \
+    # && export RSTUDIO_URL="https://s3.amazonaws.com/rstudio-ide-build/server/bionic/amd64/rstudio-server-${RSTUDIO_VERSION}-amd64.deb" \
+    # && export RSTUDIO_URL="https://s3.amazonaws.com/rstudio-ide-build/server/bionic/amd64/${RSTUDIO_DEB_FILE}" \
 
 COPY rstudio-server/rsession-profile    /etc/rstudio/rsession-profile
 COPY rstudio-server/rstudio-server-run  /etc/services.d/rstudio-server/run
@@ -78,3 +86,36 @@ COPY --from=cloudbeaver  /opt/cloudbeaver  /opt/cloudbeaver
 COPY --from=cloudbeaver  /opt/java         /opt/java
 RUN mkdir -p /etc/skel/.local/share/cloudbeaver
 COPY cloudbeaver/cloudbeaver-run /etc/services.d/cloudbeaver/run
+
+
+# label-studio ###############################################################
+
+RUN apt-get update \
+    && apt-get install -y \
+    uwsgi \
+    git \
+    libxml2-dev \
+    libxslt-dev \
+    zlib1g-dev \
+    uwsgi \
+    && python -m venv /opt/label-studio \
+    && . /opt/label-studio/bin/activate \
+    && pip install --upgrade pip \
+    && pip install label-studio
+
+# RUN apt-get update \
+#     && apt-get install -y \
+#     uwsgi \
+#     git \
+#     libxml2-dev \
+#     libxslt-dev \
+#     zlib1g-dev \
+#     uwsgi \
+#     && mkdir -p /opt/label-studio \
+#     && cd /opt/label-studio \
+#     && python -m venv env \
+#     && . env/bin/activate \
+#     && pip install --upgrade pip \
+#     && pip install label-studio
+
+# label_studio.core.settings.label_studio

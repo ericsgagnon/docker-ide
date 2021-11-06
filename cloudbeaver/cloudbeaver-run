@@ -1,8 +1,10 @@
 #!/bin/bash
 
+DISPLAY_NAME="cloudbeaver"
 # grab the username
 source /etc/profile.d/0000-env.sh
 eval $(cat /etc/cont-init.d/001-userconf.sh  | grep -E "^export USER_NAME" | envsubst)
+eval $(cat /etc/cont-init.d/001-userconf.sh  | grep -E "^export GROUP_NAME" | envsubst)
 
 # https://cloudbeaver.io/docs/Server-configuration/
 export CB_SERVER_NAME=${CB_SERVER_NAME:="CloudBeaver"}
@@ -16,6 +18,7 @@ export CB_ADMIN_PASSWORD=${CB_ADMIN_PASSWORD:=${PASSWORD:-"password"}}
 # ${CLOUDBEAVER_HOME}/workspace to ${XDG_DATA_HOME}/cloudbeaver
 export CLOUDBEAVER_HOME=${CLOUDBEAVER_HOME:=/opt/cloudbeaver}
 export CB_SERVER_CONF_FILE=${CB_SERVER_CONF_FILE:="${CLOUDBEAVER_HOME}/conf/cloudbeaver.conf"}
+export CB_PRODUCT_CONF_FILE=${CB_PRODUCT_CONF_FILE:="${CLOUDBEAVER_HOME}/conf/product.conf"}
 export CB_SERVER_WORKSPACELOCATION=${CB_SERVER_WORKSPACELOCATION:=/opt/cloudbeaver/workspace}
 user_xdg_data_home=$(su - ${USER_NAME} -c 'echo $XDG_DATA_HOME')
 user_workspacelocation=${user_xdg_data_home}'/cloudbeaver'
@@ -29,6 +32,7 @@ ln -sfn ${user_workspacelocation} ${CB_SERVER_WORKSPACELOCATION}
 # cloudbeaver likes to overwrite the runtime file with defaults, so rooturi disappears when
 # you restart.
 sed -E -i "s|rootURI:.*|rootURI: \"${CB_SERVER_ROOTURI:-/cloudbeaver}\",|g" ${CB_SERVER_CONF_FILE}
+# sed -E -i 's|defaultTheme: .*|defaultTheme: "dark"|g' ${CB_SERVER_CONF_FILE}
 
 # populate runtime files
 mkdir -p ${CB_SERVER_WORKSPACELOCATION}/.data
@@ -98,7 +102,8 @@ echo \
 }
 " > ${cloudbeaver_product_runtime_conf_file}
 fi
-
+# CB likes to ignore the runtime files, so let's push them into the default product conf too
+cat ${cloudbeaver_product_runtime_conf_file} > ${CB_PRODUCT_CONF_FILE}
 
 # populate initial data sources on first run
 cd ${CLOUDBEAVER_HOME} \
@@ -110,11 +115,14 @@ cd ${CLOUDBEAVER_HOME} \
 # chown -R ${USER_NAME:-liveware}:${GROUP_NAME:-liveware} ${CB_SERVER_WORKSPACELOCATION}
 # chown -R ${USER_NAME:-liveware}:${GROUP_NAME:-liveware} ${CLOUDBEAVER_HOME}
 # chown -R ${USER_NAME}:${GROUP_NAME} ${user_workspacelocation} 
+chown -R ${USER_NAME}:${GROUP_NAME} ${user_workspacelocation}
+chown -R ${USER_NAME}:${GROUP_NAME} ${CB_SERVER_WORKSPACELOCATION}
+chown -R ${USER_NAME}:${GROUP_NAME} ${CLOUDBEAVER_HOME}
 
-# build command args
-export launcherJar=( ${CLOUDBEAVER_HOME}/server/plugins/org.eclipse.equinox.launcher*.jar )
-export CB_CLI_ARGS=\
-" -jar "${CB_CLI_ARGS_JAR:-" ${launcherJar} "}\
+# build command
+export CB_LAUNCHER_JAR=( ${CLOUDBEAVER_HOME}/server/plugins/org.eclipse.equinox.launcher*.jar )
+export COMMAND_ARGS=\
+" -jar "${CB_CLI_ARGS_JAR:-" ${CB_LAUNCHER_JAR} "}\
 " -product "${CB_CLI_ARGS_PRODUCT:-" io.cloudbeaver.product.ce.product "}\
 " -web-config "${CB_CLI_ARGS_WEB_CONFIG:-" ${CLOUDBEAVER_HOME}/conf/cloudbeaver.conf "}\
 " -nl "${CB_CLI_ARGS_:-" en "}\
@@ -122,25 +130,34 @@ export CB_CLI_ARGS=\
 " -vmargs "${CB_CLI_ARGS_VMARGS:-" -Xmx2048M "}\
 ${CB_CLI_ARGS_ADDITIONAL_ARGS}
 
-# build command
-export CB_CLI_COMMAND=${CB_CLI_COMMAND:="cd ${CLOUDBEAVER_HOME} && java ${CB_CLI_ARGS}"}
+COMMAND=" \
+export CB_SERVER_NAME=${CB_SERVER_NAME} \
+export CB_SERVER_URL=${CB_SERVER_URL} \
+export CB_ADMIN_NAME='${CB_ADMIN_NAME}' \
+export CB_ADMIN_PASSWORD='${CB_ADMIN_PASSWORD}' \
+&& cd ${CLOUDBEAVER_HOME} \
+&& java $( echo -n ${COMMAND_ARGS} ) "
 
-# chown -R root:root ${user_workspacelocation}
-# chown -R root:root ${CB_SERVER_WORKSPACELOCATION}
-chown -R ${USER_NAME}:${GROUP_NAME} ${user_workspacelocation}
-chown -R ${USER_NAME}:${GROUP_NAME} ${CB_SERVER_WORKSPACELOCATION}
-chown -R ${USER_NAME}:${GROUP_NAME} ${CLOUDBEAVER_HOME}
-# eval "${CB_CLI_COMMAND}"
 
 su - ${USER_NAME} -c "{
-export CB_SERVER_NAME=${CB_SERVER_NAME} \
-&& export CB_SERVER_URL=${CB_SERVER_URL} \
-&& export CB_ADMIN_NAME=${CB_ADMIN_NAME} \
-&& export CB_ADMIN_PASSWORD=${CB_ADMIN_PASSWORD} \
-&& echo '---------------------------------------------------------------------' \
-&& echo 'CloudBeaver User: $(id)' \
-&& echo 'Cloudbeaver Command: '\"${CB_CLI_COMMAND}\" \
-&& ${CB_CLI_COMMAND} \
-&& echo '---------------------------------------------------------------------' \
+  echo [\"$(date +%Y-%m-%dT%H:%M:%S%z)\"] info s6-${DISPLAY_NAME} user:     "'$(id)'" \
+; echo [\"$(date +%Y-%m-%dT%H:%M:%S%z)\"] info s6-${DISPLAY_NAME}' command: '\"${COMMAND}\" \
+; ${COMMAND} \
 ; }"
+
+
+
+
+
+# su - ${USER_NAME} -c "{
+# export CB_SERVER_NAME=${CB_SERVER_NAME} \
+# && export CB_SERVER_URL=${CB_SERVER_URL} \
+# && export CB_ADMIN_NAME=${CB_ADMIN_NAME} \
+# && export CB_ADMIN_PASSWORD=${CB_ADMIN_PASSWORD} \
+# && echo '---------------------------------------------------------------------' \
+# && echo 'CloudBeaver User: $(id)' \
+# && echo 'Cloudbeaver Command: '\"${CB_CLI_COMMAND}\" \
+# && ${CB_CLI_COMMAND} \
+# && echo '---------------------------------------------------------------------' \
+# ; }"
 

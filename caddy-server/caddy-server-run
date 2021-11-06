@@ -1,11 +1,13 @@
 #!/bin/bash
 
+export DISPLAY_NAME="caddy-server"
 # grab the username
 source /etc/profile.d/0000-env.sh
 eval $(cat /etc/cont-init.d/001-userconf.sh  | grep -E "^export USER_NAME" | envsubst)
+eval $(cat /etc/cont-init.d/001-userconf.sh  | grep -E "^export GROUP_NAME" | envsubst)
 
-chown -R ${USER_NAME}:${GROUP_NAME} /var/log/pgadmin
-chmod -R g=u /var/lib/rstudio-server
+#chown -R ${USER_NAME}:${GROUP_NAME} /var/log/pgadmin
+#chmod -R g=u /var/lib/rstudio-server
 
 # TODO: AUTH: none, oidc, password
 # use caddy as the auth gatekeeper:
@@ -14,14 +16,26 @@ chmod -R g=u /var/lib/rstudio-server
 # password: use PAM
 
 CADDY_SERVER_CONFIG=${CADDY_SERVER_CONFIG:='/etc/caddy/Caddyfile'}
+COMMAND_ARGS=${CADD_SERVER_CLI_ARGS:=" --config ${CADDY_SERVER_CONFIG} --watch "}
+COMMAND=${CADDY_SERVER_COMMAND:=" $(which caddy) run ${COMMAND_ARGS}" }
+
+echo [\"$(date +%Y-%m-%dT%H:%M:%S%z)\"] info s6-${DISPLAY_NAME}" user:     $(id)"
+echo [\"$(date +%Y-%m-%dT%H:%M:%S%z)\"] info s6-${DISPLAY_NAME}' command: '${COMMAND}
+${COMMAND}
+
+# su - ${USER_NAME} -c "{
+#   echo [\"$(date +%Y-%m-%dT%H:%M:%S%z)\"] info s6-${DISPLAY_NAME}' user:     $(id)' \
+# ; echo [\"$(date +%Y-%m-%dT%H:%M:%S%z)\"] info s6-${DISPLAY_NAME}' command: '${COMMAND} \
+# ; ${COMMAND} \
+# ; }"
 
 # build the command to run
-CADDY_SERVER_CLI_ARGS=${CADD_SERVER_CLI_ARGS:=" --config ${CADDY_SERVER_CONFIG} --watch "}
-CADDY_SERVER_CLI_CMD=${CADDY_SERVER_CLI_CMD:=" $(which caddy) run ${CADDY_SERVER_CLI_ARGS}" }
+# CADDY_SERVER_CLI_ARGS=${CADD_SERVER_CLI_ARGS:=" --config ${CADDY_SERVER_CONFIG} --watch "}
+# CADDY_SERVER_CLI_CMD=${CADDY_SERVER_CLI_CMD:=" $(which caddy) run ${CADDY_SERVER_CLI_ARGS}" }
 
-echo 'Caddy User: $(id)' 
-echo "Caddy Command: ${CADDY_SERVER_CLI_CMD}" 
-${CADDY_SERVER_CLI_CMD}
+# echo 'Caddy User: $(id)' 
+# echo "Caddy Command: ${CADDY_SERVER_CLI_CMD}" 
+# ${CADDY_SERVER_CLI_CMD}
 
 
 # su - ${USER_NAME} -c "{

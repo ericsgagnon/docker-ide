@@ -23,7 +23,8 @@ route /pgadmin/* {
     to 127.0.0.1:5050
     #header_down  Location (?:^.+://)?(?:[^:/]+)?(?::[^/]+)?/  ./
     header_up    X-Forwarded-Prefix    /pgadmin
-    header_up    X-Script-Name         /pgadmin
+    header_up    X-Script-Name         /pgadmine
+    header_up    REMOTE_USER           {env.USER_NAME}
   }
 }
 
