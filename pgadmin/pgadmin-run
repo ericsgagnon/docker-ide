@@ -27,7 +27,7 @@ export PGADMIN_SESSION_DB_PATH=${PGADMIN_DATA_DIR}/sessions
 
 export PGADMIN_LOG_DIR="/var/log/pgadmin"
 export PGADMIN_LOG_FILE=${PGADMIN_LOG_DIR}"/pgadmin4.log"
-PGADMIN_REMOTE_USER_HEADER=${PGADMIN_REMOTE_USER_HEADER:'REMOTE_USER'}
+export PGADMIN_REMOTE_USER_HEADER=${PGADMIN_REMOTE_USER_HEADER:='REMOTE_USER'}
 
 # setup config_distro.py
 config_distro_path=${PGADMIN_DIR}/config_distro.py
@@ -53,9 +53,9 @@ PGADMIN_DEFAULT_EMAIL      = '${PGADMIN_DEFAULT_EMAIL}'
 PGADMIN_SETUP_EMAIL        = '${PGADMIN_DEFAULT_EMAIL}'
 PGADMIN_DEFAULT_PASSWORD   = '${PGADMIN_PASSWORD}'
 PGADMIN_SETUP_PASSWORD     = '${PGADMIN_PASSWORD}'
-AUTHENTICATION_SOURCES     = 'webserver'
+AUTHENTICATION_SOURCES     = ['webserver']
 WEBSERVER_AUTO_CREATE_USER = True
-REMOTE_USER_HEADER         = 'HTTP_REMOTE_USER'
+REMOTE_USER_HEADER         = 'HTTP_${PGADMIN_REMOTE_USER_HEADER}'
 
 # Number of values to trust for X-Forwarded-For
 PROXY_X_FOR_COUNT    = 10
@@ -72,8 +72,11 @@ X_FRAME_OPTIONS = ''
 #    eg: Header REMOTE_USER is HTTP_REMOTE_USER
 # - we're replacing the harcoded 
 # - replace 'REMOTE_USER' environ with 
-sed -i "s/'REMOTE_USER'/config.REMOTE_USER_HEADER/g" ${PGADMIN_DIR}/pgadmin/authentication/webserver.py
+sed -i "s/'REMOTE_USER'/config.REMOTE_USER_HEADER/g" ${PGADMIN_DIR}/pgadmin/authenticate/webserver.py
 
+# if you need to change the header name pgadmin users for webserver auth, do something like:
+# sed -i -E "s/header_up\s+REMOTE_USER/header-up NEW_HEADER_NAME/g" /etc/caddy/Caddyfile
+# sed -i -E "s/header_up\s+REMOTE_USER\s+{env.USER_NAME}/header-up NEW_HEADER_NAME  {env.NEW_ENVIRONMENT_VAR}/g" /etc/caddy/Caddyfile
 
 # propagate PGADMIN_CONFIG_* env vars to config_ditro.py
 for var in $(env | grep PGADMIN_CONFIG_ | cut -d "=" -f 1); do
@@ -120,75 +123,3 @@ su - ${USER_NAME} -c "{
 ; ${COMMAND} \
 ; }"
 
-# su - ${USER_NAME} -c "
-# export DESKTOP_USER=${PGADMIN_EMAIL}
-# export PGADMIN_DEFAULT_EMAIL=${PGADMIN_EMAIL}
-# export PGADMIN_SETUP_EMAIL=${PGADMIN_EMAIL}
-# export PGADMIN_DEFAULT_PASSWORD=${PGADMIN_PASSWORD}
-# export PGADMIN_SETUP_PASSWORD=${PGADMIN_PASSWORD}
-# cd ${PGADMIN_DIR} \
-# && source ${PGADMIN_DIR}/venv/bin/activate \
-# && python /usr/local/pgadmin4/setup.py --user ${PGADMIN_SETUP_EMAIL} \
-# && ${PGADMIN_DIR}/venv/bin/gunicorn \
-# --timeout 86400 \
-# --bind 0.0.0.0:5050 \
-# -e SCRIPT_NAME=/pgadmin \
-# --pythonpath=${PGADMIN_DIR} \
-# -w 1 \
-# --threads 25 \
-# --access-logfile - \
-# -c gunicorn_config.py \
-# run_pgadmin:app
-# "
-
-'HTTP_REMOTE_USER': 'liveware'
-
-{
-  'wsgi.errors': <gunicorn.http.wsgi.WSGIErrorsWrapper object at 0x7f8b3e1601c0>, 
-  'wsgi.version': (1, 0), 
-  'wsgi.multithread': True, 
-  'wsgi.multiprocess': False, 
-  'wsgi.run_once': False, 
-  'wsgi.file_wrapper': <class 'gunicorn.http.wsgi.FileWrapper'>, 
-  'wsgi.input_terminated': True, 
-  'SERVER_SOFTWARE': 'Python', 
-  'wsgi.input': <gunicorn.http.body.Body object at 0x7f8b3e160220>, 
-  'gunicorn.socket': <socket.socket fd=13, family=AddressFamily.AF_INET, type=SocketKind.SOCK_STREAM, proto=0, laddr=('127.0.0.1', 5050), raddr=('127.0.0.1', 43880)>, 
-  'REQUEST_METHOD': 'GET', 
-  'QUERY_STRING': '', 
-  'RAW_URI': '/pgadmin/', 
-  'SERVER_PROTOCOL': 'HTTP/1.1', 
-  'HTTP_HOST': 'localhost', 
-  'HTTP_USER_AGENT': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/95.0.4638.69 Safari/537.36', 
-  'HTTP_ACCEPT': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9', 
-  'HTTP_ACCEPT_ENCODING': 'gzip, deflate, br', 
-  'HTTP_ACCEPT_LANGUAGE': 'en-US,en;q=0.9', 
-  'HTTP_REFERER': 'http://localhost/', 
-  'HTTP_REMOTE_USER': 'liveware', 
-  'HTTP_SEC_CH_UA': '"Google Chrome";v="95", "Chromium";v="95", ";Not A Brand";v="99"', 
-  'HTTP_SEC_CH_UA_MOBILE': '?0', 
-  'HTTP_SEC_CH_UA_PLATFORM': '"Linux"', 
-  'HTTP_SEC_FETCH_DEST': 'document', 
-  'HTTP_SEC_FETCH_MODE': 'navigate', 
-  'HTTP_SEC_FETCH_SITE': 'same-origin', 
-  'HTTP_SEC_FETCH_USER': '?1', 
-  'HTTP_UPGRADE_INSECURE_REQUESTS': '1', 
-  'HTTP_X_FORWARDED_FOR': '172.17.0.1', 
-  'HTTP_X_FORWARDED_PREFIX': '/pgadmin', 
-  'HTTP_X_FORWARDED_PROTO': 'http', 
-  'HTTP_X_SCRIPT_NAME': '/pgadmin', 
-  'wsgi.url_scheme': 'http', 
-  'REMOTE_ADDR': '127.0.0.1', 
-  'REMOTE_PORT': '43880', 
-  'SERVER_NAME': '0.0.0.0', 'SERVER_PORT': '5050',
-	'PATH_INFO': '/',
-	'SCRIPT_NAME': '/pgadmin',
-	'werkzeug.proxy_fix.orig': {
-    'REMOTE_ADDR': '127.0.0.1',
-		'wsgi.url_scheme': 'http',
-		'HTTP_HOST': 'localhost',
-		'SERVER_NAME': '0.0.0.0',
-		'SERVER_PORT': '5050',
-		'SCRIPT_NAME': '/pgadmin'
-  }, 
-  'flask.app': <PgAdmin 'pgadmin'>, 'eventlet.input': <engineio.middleware.WSGIApp.__call__.<locals>.Input object at 0x7f8b3e1602e0>, 

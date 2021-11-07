@@ -31,8 +31,18 @@ ln -sfn ${user_workspacelocation} ${CB_SERVER_WORKSPACELOCATION}
 
 # cloudbeaver likes to overwrite the runtime file with defaults, so rooturi disappears when
 # you restart.
-sed -E -i "s|rootURI:.*|rootURI: \"${CB_SERVER_ROOTURI:-/cloudbeaver}\",|g" ${CB_SERVER_CONF_FILE}
-# sed -E -i 's|defaultTheme: .*|defaultTheme: "dark"|g' ${CB_SERVER_CONF_FILE}
+sed -E -i "s|(workspaceLocation):.*|\1: \"${CB_SERVER_WORKSPACELOCATION:-workspace}\",|g" ${CB_SERVER_CONF_FILE}
+sed -E -i "s|(rootURI):.*|\1: \"${CB_SERVER_ROOTURI:-/cloudbeaver}\",|g" ${CB_SERVER_CONF_FILE}
+sed -E -i "s|(serviceURI):.*|\1: \"${CB_SERVER_SERVICEURI:-/api/}\",|g" ${CB_SERVER_CONF_FILE}
+sed -E -i "s|(expireSessionAfterPeriod):.*|\1:  ${CB_SERVER_EXPIRESESSIONAFTERPERIOD:-3600000},|g" ${CB_SERVER_CONF_FILE}
+sed -E -i "s|(anonymousAccessEnabled):.*|\1:  ${CB_APP_ANONYMOUSACCESSENABLED:-true},|g" ${CB_SERVER_CONF_FILE}
+sed -E -i "s|(anonymousAccessAllowed):.*|\1:  ${CB_APP_ANONYMOUSACCESSENABLED:-true},|g" ${CB_SERVER_CONF_FILE}
+sed -E -i "s|(anonymousUserRole):.*|\1:  \"${CB_APP_ANONYMOUSUSERROLE:-admin}\",|g" ${CB_SERVER_CONF_FILE}
+sed -E -i "s|(supportsCustomConnections):.*|\1:  ${CB_APP_SUPPORTSCUSTOMCONNECTIONS:-true},|g" ${CB_SERVER_CONF_FILE}
+sed -E -i "s|(publicCredentialsSaveEnabled):.*|\1:  ${CB_APP_PUBLICCREDENTIALSSAVEENABLED:-true},|g" ${CB_SERVER_CONF_FILE}
+sed -E -i "s|(adminCredentialsSaveEnabled):.*|\1:  ${CB_APP_ADMINCREDENTIALSSAVEENABLED:-true}|g" ${CB_SERVER_CONF_FILE}
+
+
 
 # populate runtime files
 mkdir -p ${CB_SERVER_WORKSPACELOCATION}/.data
@@ -61,11 +71,14 @@ echo \
         ]
     }
 }
-" > ${cloudbeaver_server_runtime_conf_file}
+" | tee ${cloudbeaver_server_runtime_conf_file} #${CLOUDBEAVER_HOME}/conf/.cloudbeaver.runtime.conf
 #fi
 
 # populate the .product.runtime.conf file
 cloudbeaver_product_runtime_conf_file=${CB_SERVER_WORKSPACELOCATION}/.data/.product.runtime.conf
+sed -E -i 's|defaultTheme: .*|defaultTheme: "dark",|g' ${CB_PRODUCT_CONF_FILE}
+
+
 if [[ ! -f ${cloudbeaver_product_runtime_conf_file} ]] ; then
 echo \
 "// this file is written by s6 (via /etc/services.d/cloudbeaver/run)
@@ -144,20 +157,4 @@ su - ${USER_NAME} -c "{
 ; echo [\"$(date +%Y-%m-%dT%H:%M:%S%z)\"] info s6-${DISPLAY_NAME}' command: '\"${COMMAND}\" \
 ; ${COMMAND} \
 ; }"
-
-
-
-
-
-# su - ${USER_NAME} -c "{
-# export CB_SERVER_NAME=${CB_SERVER_NAME} \
-# && export CB_SERVER_URL=${CB_SERVER_URL} \
-# && export CB_ADMIN_NAME=${CB_ADMIN_NAME} \
-# && export CB_ADMIN_PASSWORD=${CB_ADMIN_PASSWORD} \
-# && echo '---------------------------------------------------------------------' \
-# && echo 'CloudBeaver User: $(id)' \
-# && echo 'Cloudbeaver Command: '\"${CB_CLI_COMMAND}\" \
-# && ${CB_CLI_COMMAND} \
-# && echo '---------------------------------------------------------------------' \
-# ; }"
 
