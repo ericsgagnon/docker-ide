@@ -23,33 +23,3 @@ echo [\"$(date +%Y-%m-%dT%H:%M:%S%z)\"] info s6-${DISPLAY_NAME}" user:     $(id)
 echo [\"$(date +%Y-%m-%dT%H:%M:%S%z)\"] info s6-${DISPLAY_NAME}' command: '${COMMAND}
 ${COMMAND}
 
-# su - ${USER_NAME} -c "{
-#   echo [\"$(date +%Y-%m-%dT%H:%M:%S%z)\"] info s6-${DISPLAY_NAME}' user:     $(id)' \
-# ; echo [\"$(date +%Y-%m-%dT%H:%M:%S%z)\"] info s6-${DISPLAY_NAME}' command: '${COMMAND} \
-# ; ${COMMAND} \
-# ; }"
-
-# build the command to run
-# CADDY_SERVER_CLI_ARGS=${CADD_SERVER_CLI_ARGS:=" --config ${CADDY_SERVER_CONFIG} --watch "}
-# CADDY_SERVER_CLI_CMD=${CADDY_SERVER_CLI_CMD:=" $(which caddy) run ${CADDY_SERVER_CLI_ARGS}" }
-
-# echo 'Caddy User: $(id)' 
-# echo "Caddy Command: ${CADDY_SERVER_CLI_CMD}" 
-# ${CADDY_SERVER_CLI_CMD}
-
-
-# su - ${USER_NAME} -c "{
-# echo '---------------------------------------------------------------------' \
-# && echo 'Caddy User: $(id)' \
-# && echo 'Caddy Command: '${CADDY_SERVER_CLI_CMD} \
-# && ${CADDY_SERVER_CLI_CMD} \
-# && echo '---------------------------------------------------------------------' \
-# ; }"
-
-# {
-#     "----------------------------------------------------------------------"
-#     su - ${USER_NAME} -c 'echo "Caddy User: $(id)" '
-#     su - ${USER_NAME} -c "echo 'Caddy Command: '${CADDY_SERVER_CLI_CMD}"
-#     su - ${USER_NAME} -c "${CADDY_SERVER_CLI_CMD}"
-#     "----------------------------------------------------------------------"
-# }

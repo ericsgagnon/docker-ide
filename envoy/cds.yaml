@@ -1,0 +1,133 @@
+resources:
+- "@type": type.googleapis.com/envoy.config.cluster.v3.Cluster
+  name: pgadmin
+  connect_timeout: 60s
+  load_assignment:
+    cluster_name: pgadmin
+    endpoints:
+    - lb_endpoints:
+      - endpoint:
+          address:
+            socket_address:
+              address: 127.0.0.1
+              port_value: 5050
+- "@type": type.googleapis.com/envoy.config.cluster.v3.Cluster
+  name: code-server
+  connect_timeout: 60s
+  load_assignment:
+    cluster_name: code-server
+    endpoints:
+    - lb_endpoints:
+      - endpoint:
+          address:
+            socket_address:
+              address: 127.0.0.1
+              port_value: 8080
+# - "@type": type.googleapis.com/envoy.config.cluster.v3.Cluster
+#   name: code-server
+#   connect_timeout: 60s
+#   load_assignment:
+#     cluster_name: code-server
+#     endpoints:
+#     - lb_endpoints:
+#       - endpoint:
+#           address:
+#             socket_address:
+#               address: 127.0.0.1
+#               port_value: 8080
+
+# - "@type": type.googleapis.com/envoy.config.cluster.v3.Cluster
+#   name: code-server
+#   connect_timeout: 60s
+#   load_assignment:
+#     cluster_name: code-server
+#     endpoints:
+#     - lb_endpoints:
+#       - endpoint:
+#           address:
+#             socket_address:
+#               address: 127.0.0.1
+#               port_value: 8080
+
+
+# redir /rstudio /rstudio/
+# route /rstudio/* {
+#   uri strip_prefix /rstudio
+#   reverse_proxy {
+#     to 127.0.0.1:8787
+#     header_down  Location (?:^.+://)?(?:[^:/]+)?(?::[^/]+)?/  ./
+#     # header_down  Location ([^:]+://[^:]+(:[0-9]+)?/)  ./
+#   }
+# }
+
+
+# redir /pgadmin  /pgadmin/
+# route /pgadmin/* {
+#   #uri strip_prefix /pgadmin
+#   reverse_proxy {
+#     to 127.0.0.1:5050
+#     #header_down  Location (?:^.+://)?(?:[^:/]+)?(?::[^/]+)?/  ./
+#     header_up    X-Forwarded-Prefix    /pgadmin
+#     header_up    X-Script-Name         /pgadmin
+#     header_up    REMOTE_USER           {env.USER_NAME}
+#   }
+# }
+
+# redir /jupyter /jupyter/
+# route /jupyter/* {
+#   #uri strip_prefix /jupyter
+#   reverse_proxy {
+#     to 127.0.0.1:8888
+#     #header_down  Location (?:^.+://)?(?:[^:/]+)?(?::[^/]+)?/  ./
+#   }
+# }
+
+# redir /cloudbeaver /cloudbeaver/
+# route /cloudbeaver/* {
+#   #uri strip_prefix /cloudbeaver
+#   reverse_proxy {
+#     to 127.0.0.1:8978
+#     #header_down  Location (?:^.+://)?(?:[^:/]+)?(?::[^/]+)?/  ./
+#   }
+# }
+
+# redir /files /files/
+# route /files/* {
+#   uri strip_prefix /files
+#   file_server {
+#     root  /home/liveware
+#     browse
+#   }
+# }
+
+# @proxyport {
+#   path_regexp proxyport ^/port/([0-9]+)/(.*)
+# }
+# @proxyportstub {
+#   path_regexp proxyportstub ^/port/[0-9]+$
+# }
+
+# redir @proxyportstub {re.proxyportstub.0}/
+# handle @proxyport {
+#   uri path_regexp ^/port/[0-9]+/?  /
+#   reverse_proxy {
+#     to localhost:{re.proxyport.1}
+#     header_down  Location (?:^.+://)?(?:[^:/]+)?(?::[^/]+)?/  ./
+#   }
+# }
+
+
+# redir /port /port/
+# route /port/ {
+#   respond "you need to enter a port number - ie /port/[port_number]/"
+# }
+
+# route /* {
+#   file_server {
+#     root /var/www/html
+
+#     browse
+#   }
+# }
+
+

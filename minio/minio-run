@@ -1,0 +1,40 @@
+#!/bin/bash
+
+export DISPLAY_NAME="minio"
+# grab the username
+source /etc/profile.d/0000-env.sh
+eval $(cat /etc/cont-init.d/001-userconf.sh  | grep -E "^export USER_NAME" | envsubst)
+eval $(cat /etc/cont-init.d/001-userconf.sh  | grep -E "^export GROUP_NAME" | envsubst)
+
+export MINIO_ROOT_USER=${USER_NAME}
+export MINIO_ROOT_PASSWORD=${PASSWORD}
+export 
+
+mc set public /home/liveware
+
+
+COMMAND_ARGS=\
+${CODE_SERVER_AUTH:+"                 --auth                 ${CODE_SERVER_AUTH}                 "}\
+${CODE_SERVER_CERT:+"                 --cert                 ${CODE_SERVER_CERT}                 "}\
+${CODE_SERVER_CERT_HOST:+"            --cert-host            ${CODE_SERVER_CERT_HOST}            "}\
+${CODE_SERVER_CERT_KEY:+"             --cert-key             ${CODE_SERVER_CERT_KEY}             "}\
+${CODE_SERVER_DISABLE_TELEMETRY:+"    --disable-telemetry                                        "}\
+${CODE_SERVER_DISABLE_UPDATE_CHECK:+" --disable-update-check                                     "}\
+${CODE_SERVER_BIND_ADDR:+"            --bind-addr            ${CODE_SERVER_BIND_ADDR}            "}\
+${CODE_SERVER_CONFIG:+"               --config               ${CODE_SERVER_CONFIG}               "}\
+${CODE_SERVER_SOCKET:+"               --socket               ${CODE_SERVER_SOCKET}               "}\
+${CODE_SERVER_USER_DATA_DIR:+"        --user-data-dir        ${CODE_SERVER_USER_DATA_DIR}        "}\
+${CODE_SERVER_EXTENSIONS_DIR:+"       --extensions-dir       ${CODE_SERVER_EXTENSIONS_DIR}       "}\
+${CODE_SERVER_ENABLE_PROPOSED_API:+"  --enable-proposed-api  ${CODE_SERVER_ENABLE_PROPOSED_API}  "}\
+${CODE_SERVER_PROXY_DOMAIN:+"         --proxy-domain         ${CODE_SERVER_PROXY_DOMAIN}         "}\
+${CODE_SERVER_LINK:+"                 --link                 ${CODE_SERVER_LINK}                 "}
+
+su - liveware -c 'minio server --console-address 0.0.0.0:11000  /home/liveware'
+
+COMMAND="/usr/local/bin/minio $(echo -n ${COMMAND_ARGS} ) "'${HOME}'
+
+su - ${USER_NAME} -c "{
+  echo [\"$(date +%Y-%m-%dT%H:%M:%S%z)\"] info s6-${DISPLAY_NAME}' user:     '"'$(id)'" \
+; echo [\"$(date +%Y-%m-%dT%H:%M:%S%z)\"] info s6-${DISPLAY_NAME}' command: '\"${COMMAND}\" \
+; ${COMMAND} \
+; }"

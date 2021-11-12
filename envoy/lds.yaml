@@ -1,0 +1,84 @@
+resources:
+- "@type": type.googleapis.com/envoy.config.listener.v3.Listener
+  name: default_listener
+  address:
+    socket_address:
+      address: 0.0.0.0
+      port_value: 10000
+  filter_chains:
+  - filters:
+      name: envoy.filters.network.http_connection_manager
+      typed_config:
+        "@type": type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+        stat_prefix: ingress_http
+        upgrade_configs:
+        - upgrade_type: websocket
+        use_remote_address: true
+        normalize_path: true
+        merge_slashes: true
+        common_http_protocol_options:
+          idle_timeout: 7200s        
+        http_filters:
+        - name: envoy.filters.http.router
+        route_config:
+          name: local_routes
+          # request_headers_to_add:
+          # - header:
+          #     key: "content-security-policy"
+          #     value: "default-src '*' ; script-src '*' 'unsafe-inline' 'unsafe-eval'; connect-src '*'; img-src '*' ; style-src '*' 'unsafe-inline';base-uri 'self';form-action 'self'"
+          response_headers_to_add:
+          - header:
+              key: "content-security-policy"
+              value: "default-src *  ; script-src * 'self' 'unsafe-inline' ; connect-src * ;style-src * 'self' 'unsafe-inline' ;base-uri 'strict-dynamic';form-action 'self' ; img-src * 'self' data: http: "
+            append: false
+          virtual_hosts:
+          - name: local_services
+            domains: 
+            - "*"
+            routes:
+            - name: pgadmin
+              match:
+                prefix: "/pgadmin"
+              route:
+                cluster: pgadmin
+              request_headers_to_add:
+              - header:
+                  key: "x-forwarded-prefix"
+                  value: "/pgadmin"
+              - header:
+                  key: "x-script-name"
+                  value: "/pgadmin"
+              - header:
+                  key: "REMOTE_USER"
+                  value: "liveware"
+            - name: code-server
+              match:
+                prefix: "/code/"
+                # safe_regex: 
+                #   google_re2: {}
+                #   regex: /code(/?).*
+              route:
+                cluster: code-server
+                prefix_rewrite: "/"
+                # regex_rewrite:
+                #   pattern:
+                #     google_re2: {}
+                #     regex: /code(/?)(.*)
+                #   substitution: /\2
+            - name: code-server-no-slash
+              match:
+                prefix: "/code"
+              redirect:
+                path_redirect: "/code/"
+            #   route:
+            #     cluster: code-server
+            #     prefix_rewrite: "/"
+            # - name: default
+            #   match:
+            #     prefix: "/"
+            #   route:
+            #     cluster: code-server
+            #     prefix_rewrite: "/"
+
+    
+

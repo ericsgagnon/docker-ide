@@ -46,6 +46,49 @@ route /cloudbeaver/* {
   }
 }
 
+redir /label-studio /label-studio/
+route /label-studio/* {
+  uri strip_prefix /label-studio
+  header Access-Control-Allow-Origin '*'
+  header Location (?:^.+://)?(?:[^:/]+)?(?::[^/]+)?(/label-studio)?/  /label-studio/
+
+  # replace {
+  #     re href="/(label-studio/)?      href="/label-studio/ 
+  #     re src="/(label-studio/)?       src="/label-studio/
+  #     re (label-studio)?/?react-app   label-studio/react-app
+  #     #data/upload             label-studio/data/upload    
+  #     #data/avatars            label-studio/data/avatars
+  #     #label-studio-frontend   label-studio/label-studio-frontend         
+  # }
+
+
+  handle_path /static/* {
+    file_server {
+      # root /opt/label-studio/label-studio/static
+      root /opt/label-studio/lib/python3.9/site-packages/label_studio/core/static_build/
+    }
+  }
+  handle_path /react-app/* {
+    file_server {
+      # root /opt/label-studio/label-studio/react-app
+      root /opt/label-studio/lib/python3.9/site-packages/label_studio/frontend/dist/react-app
+    }
+  }
+  handle_path /label-studio-frontend/* {
+    file_server {
+      # root /opt/label-studio/label-studio/lsf
+      root /opt/label-studio/lib/python3.9/site-packages/label_studio/frontend/dist/lsf
+    }
+  }
+  reverse_proxy {
+    to 127.0.0.1:13500
+    header_up   Access-Control-Allow-Origin '*'
+    header_down Location (?:^.+://)?(?:[^:/]+)?(?::[^/]+)?(/label-studio)?/  /label-studio/
+  }
+
+}
+
+
 redir /files /files/
 route /files/* {
   uri strip_prefix /files

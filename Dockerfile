@@ -11,6 +11,7 @@ RUN xcaddy build \
     --with github.com/hairyhenderson/caddy-teapot-module \
     --with github.com/abiosoft/caddy-json-schema \
     --with github.com/abiosoft/caddy-yaml \
+    --with github.com/abiosoft/caddy-exec \
     --with github.com/caddyserver/replace-response \
     --with github.com/greenpau/caddy-auth-portal
 
@@ -87,6 +88,11 @@ COPY --from=cloudbeaver  /opt/java         /opt/java
 RUN mkdir -p /etc/skel/.local/share/cloudbeaver
 COPY cloudbeaver/cloudbeaver-run /etc/services.d/cloudbeaver/run
 
+# minio ######################################################################
+
+RUN wget -O /usr/local/bin/minio https://dl.min.io/server/minio/release/linux-amd64/minio \
+    && chmod +x /usr/local/bin/minio
+# COPY minio/minio-run /etc/services.d/minio/run
 
 # label-studio ###############################################################
 
@@ -98,10 +104,11 @@ RUN apt-get update \
     libxslt-dev \
     zlib1g-dev \
     uwsgi \
-    && python -m venv /opt/label-studio \
+    && python3.9 -m venv /opt/label-studio \
     && . /opt/label-studio/bin/activate \
     && pip install --upgrade pip \
-    && pip install label-studio
+    && pip install label-studio \
+    && chmod -R g=u /opt/label-studio
 
 # RUN apt-get update \
 #     && apt-get install -y \
@@ -119,3 +126,13 @@ RUN apt-get update \
 #     && pip install label-studio
 
 # label_studio.core.settings.label_studio
+
+# minio #######################################################################
+
+RUN mkdir -p /opt/minio \
+    && mkdir -p /etc/minio \
+    && wget -O /opt/minio/minio https://dl.min.io/server/minio/release/linux-amd64/minio \
+    && chmod +x /opt/minio/minio \
+    && ln -s /opt/minio/minio /usr/local/bin/minio
+
+
