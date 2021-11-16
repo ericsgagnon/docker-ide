@@ -94,6 +94,12 @@ RUN wget -O /usr/local/bin/minio https://dl.min.io/server/minio/release/linux-am
     && chmod +x /usr/local/bin/minio
 # COPY minio/minio-run /etc/services.d/minio/run
 
+# RUN mkdir -p /opt/minio \
+#     && mkdir -p /etc/minio \
+#     && wget -O /opt/minio/minio https://dl.min.io/server/minio/release/linux-amd64/minio \
+#     && chmod +x /opt/minio/minio \
+#     && ln -s /opt/minio/minio /usr/local/bin/minio
+
 # label-studio ###############################################################
 
 RUN apt-get update \
@@ -110,29 +116,7 @@ RUN apt-get update \
     && pip install label-studio \
     && chmod -R g=u /opt/label-studio
 
-# RUN apt-get update \
-#     && apt-get install -y \
-#     uwsgi \
-#     git \
-#     libxml2-dev \
-#     libxslt-dev \
-#     zlib1g-dev \
-#     uwsgi \
-#     && mkdir -p /opt/label-studio \
-#     && cd /opt/label-studio \
-#     && python -m venv env \
-#     && . env/bin/activate \
-#     && pip install --upgrade pip \
-#     && pip install label-studio
+COPY label-studio/label-studio-run  /etc/services.d/label-studio/run
 
-# label_studio.core.settings.label_studio
-
-# minio #######################################################################
-
-RUN mkdir -p /opt/minio \
-    && mkdir -p /etc/minio \
-    && wget -O /opt/minio/minio https://dl.min.io/server/minio/release/linux-amd64/minio \
-    && chmod +x /opt/minio/minio \
-    && ln -s /opt/minio/minio /usr/local/bin/minio
 
 

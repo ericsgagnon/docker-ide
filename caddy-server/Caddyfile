@@ -50,7 +50,7 @@ redir /label-studio /label-studio/
 route /label-studio/* {
   uri strip_prefix /label-studio
   header Access-Control-Allow-Origin '*'
-  header Location (?:^.+://)?(?:[^:/]+)?(?::[^/]+)?(/label-studio)?/  /label-studio/
+  # header Location (?:^.+://)?(?:[^:/]+)?(?::[^/]+)?(/label-studio)?/  /label-studio/
 
   # replace {
   #     re href="/(label-studio/)?      href="/label-studio/ 
@@ -83,7 +83,7 @@ route /label-studio/* {
   reverse_proxy {
     to 127.0.0.1:13500
     header_up   Access-Control-Allow-Origin '*'
-    header_down Location (?:^.+://)?(?:[^:/]+)?(?::[^/]+)?(/label-studio)?/  /label-studio/
+    # header_down Location (?:^.+://)?(?:[^:/]+)?(?::[^/]+)?(/label-studio)?/  /label-studio/
   }
 
 }
