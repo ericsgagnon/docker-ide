@@ -40,7 +40,7 @@ sed -E -i "s|(anonymousAccessAllowed):.*|\1:  ${CB_APP_ANONYMOUSACCESSENABLED:-t
 sed -E -i "s|(anonymousUserRole):.*|\1:  \"${CB_APP_ANONYMOUSUSERROLE:-admin}\",|g" ${CB_SERVER_CONF_FILE}
 sed -E -i "s|(supportsCustomConnections):.*|\1:  ${CB_APP_SUPPORTSCUSTOMCONNECTIONS:-true},|g" ${CB_SERVER_CONF_FILE}
 sed -E -i "s|(publicCredentialsSaveEnabled):.*|\1:  ${CB_APP_PUBLICCREDENTIALSSAVEENABLED:-true},|g" ${CB_SERVER_CONF_FILE}
-sed -E -i "s|(adminCredentialsSaveEnabled):.*|\1:  ${CB_APP_ADMINCREDENTIALSSAVEENABLED:-true}|g" ${CB_SERVER_CONF_FILE}
+sed -E -i "s|(adminCredentialsSaveEnabled):[^,]*|\1:  ${CB_APP_ADMINCREDENTIALSSAVEENABLED:-true}|g" ${CB_SERVER_CONF_FILE}
 
 
 

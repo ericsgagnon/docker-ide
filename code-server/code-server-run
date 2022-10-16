@@ -10,6 +10,7 @@ export CODE_SERVER_AUTH=${AUTH:-none}
 export CODE_SERVER_DISABLE_TELEMETRY=${CODE_SERVER_DISABLE_TELEMETRY:=true}
 export CODE_SERVER_DISABLE_UPDATE_CHECK=${CODE_SERVER_DISABLE_UPDATE_CHECK:=true}
 export CODE_SERVER_BIND_ADDR=${CODE_SERVER_BIND_ADDR:='0.0.0.0:8080'}
+export EXTENSIONS_GALLERY='{ "serviceUrl": "https://marketplace.visualstudio.com/_apis/public/gallery", "itemUrl": "https://marketplace.visualstudio.com/items" }'
 
 COMMAND_ARGS=\
 ${CODE_SERVER_AUTH:+"                 --auth                 ${CODE_SERVER_AUTH}                 "}\
@@ -27,7 +28,8 @@ ${CODE_SERVER_ENABLE_PROPOSED_API:+"  --enable-proposed-api  ${CODE_SERVER_ENABL
 ${CODE_SERVER_PROXY_DOMAIN:+"         --proxy-domain         ${CODE_SERVER_PROXY_DOMAIN}         "}\
 ${CODE_SERVER_LINK:+"                 --link                 ${CODE_SERVER_LINK}                 "}
 
-COMMAND="/usr/local/bin/code-server $(echo -n ${COMMAND_ARGS} ) "'${HOME}'
+# COMMAND="/usr/local/bin/code-server $(echo -n ${COMMAND_ARGS} ) "'${HOME}'
+COMMAND="/usr/bin/code-server $(echo -n ${COMMAND_ARGS} ) "'${HOME}'
 
 su - ${USER_NAME} -c "{
   echo [\"$(date +%Y-%m-%dT%H:%M:%S%z)\"] info s6-${DISPLAY_NAME}' user:     '"'$(id)'" \

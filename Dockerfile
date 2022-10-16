@@ -19,8 +19,21 @@ FROM ericsgagnon/ide-base:${VERSION} as base
 
 # SHELL [ "/bin/bash", "-c" ]
 
+# caddy (proxy server) #######################################################
+FROM base as caddy-server
+
+COPY --from=caddy-builder /usr/bin/caddy /usr/bin/caddy
+COPY caddy-server/Caddyfile        /etc/caddy/Caddyfile
+COPY caddy-server/site/*           /var/www/html/
+COPY caddy-server/site/images/*    /var/www/html/images/
+
+COPY caddy-server/caddy-server-run /etc/s6-overlay/s6-rc.d/caddy-server/run
+RUN SERVICE_NAME=caddy-server && echo longrun > /etc/s6-overlay/s6-rc.d/${SERVICE_NAME}/type && touch /etc/s6-overlay/s6-rc.d/user/contents.d/${SERVICE_NAME}
+
+EXPOSE 80 443
+
 # rstudio server #############################################################
-FROM base as rstudio
+FROM caddy-server as rstudio
 # capture workspace in the image for reference
 ENV WORKSPACE="/tmp/workspace/ide"
 # Use auth=none by default to use external authentication and (try to) skip logins for each ide
@@ -38,40 +51,32 @@ RUN apt-get update && apt-get upgrade -y \
     && mkdir -p /var/run/rstudio-server \
     && chmod 1777 /var/run/rstudio-server
 
-    # && export RSTUDIO_VERSION=$(wget -qO - https://rstudio.com/products/rstudio/download-server/debian-ubuntu/ | grep -oP "(?<=rstudio-server-)[0-9]\.[0-9]\.[0-9]+" | sort | tail -n 1) \
-    # && export RSTUDIO_DEB_FILE=$(wget -qO - https://rstudio.com/products/rstudio/download-server/debian-ubuntu/ | grep -oP "rstudio-server-.*\.deb" | sort | tail -n 1) \
-    # && export RSTUDIO_URL="https://s3.amazonaws.com/rstudio-ide-build/server/bionic/amd64/rstudio-server-${RSTUDIO_VERSION}-amd64.deb" \
-    # && export RSTUDIO_URL="https://s3.amazonaws.com/rstudio-ide-build/server/bionic/amd64/${RSTUDIO_DEB_FILE}" \
-
 COPY rstudio-server/rsession-profile    /etc/rstudio/rsession-profile
-COPY rstudio-server/rstudio-server-run  /etc/services.d/rstudio-server/run
+COPY rstudio-server/rstudio-server-run  /etc/s6-overlay/s6-rc.d/rstudio-server/run
+RUN SERVICE_NAME=rstudio-server && echo longrun > /etc/s6-overlay/s6-rc.d/${SERVICE_NAME}/type && touch /etc/s6-overlay/s6-rc.d/user/contents.d/${SERVICE_NAME}
 
 # code server ################################################################
 FROM rstudio as code-server
 
 RUN apt-get update && apt-get upgrade -y \
-    && curl -fsSL https://code-server.dev/install.sh | bash -s -- --method=standalone --prefix=/usr/local
+    && curl -fsSL https://code-server.dev/install.sh | bash -s 
+    # && curl -fsSL https://code-server.dev/install.sh | bash -s -- --method=standalone --prefix=/usr/local
 
-COPY code-server/code-server-run /etc/services.d/code-server/run
-ENV SERVICE_URL=https://marketplace.visualstudio.com/_apis/public/gallery
-ENV ITEM_URL=https://marketplace.visualstudio.com/items
-#EXPOSE 8080
+COPY code-server/code-server-run  /etc/s6-overlay/s6-rc.d/code-server/run
+RUN SERVICE_NAME=code-server && echo longrun > /etc/s6-overlay/s6-rc.d/${SERVICE_NAME}/type && touch /etc/s6-overlay/s6-rc.d/user/contents.d/${SERVICE_NAME}
 
-# caddy (proxy server) #######################################################
-FROM code-server as caddy-server
-
-COPY --from=caddy-builder /usr/bin/caddy /usr/bin/caddy
-COPY caddy-server/caddy-server-run /etc/services.d/caddy-server/run
-COPY caddy-server/Caddyfile        /etc/caddy/Caddyfile
-COPY caddy-server/site/*           /var/www/html/
-COPY caddy-server/site/images/*    /var/www/html/images/
-
-EXPOSE 80 443
+# ENV SERVICE_URL=https://marketplace.visualstudio.com/_apis/public/gallery
+# ENV ITEM_URL=https://marketplace.visualstudio.com/items
+# ENV EXTENSIONS_GALLERY='{ "serviceUrl": "https://marketplace.visualstudio.com/_apis/public/gallery", "cacheUrl": "https://vscode.blob.core.windows.net/gallery/index", "itemUrl": "https://marketplace.visualstudio.com/items" }'
+# ENV EXTENSIONS_GALLERY='{ "serviceUrl": "https://marketplace.visualstudio.com/_apis/public/gallery", "itemUrl": "https://marketplace.visualstudio.com/items" }'
+# https://marketplace.visualstudio.com/_apis/public/gallery
+# https://marketplace.visualstudio.com/api/public
+# export EXTENSIONS_GALLERY='{"serviceUrl": "https://extensions.coder.com/api"}'
 
 # pgadmin ####################################################################
-
 COPY --from=pgadmin      /pgadmin4            /usr/local/pgadmin4
-COPY pgadmin/pgadmin-run /etc/services.d/pgadmin/run
+COPY pgadmin/pgadmin-run    /etc/s6-overlay/s6-rc.d/pgadmin/run
+RUN SERVICE_NAME=pgadmin && echo longrun > /etc/s6-overlay/s6-rc.d/${SERVICE_NAME}/type && touch /etc/s6-overlay/s6-rc.d/user/contents.d/${SERVICE_NAME}
 
 RUN cd /usr/local/pgadmin4 \
     && python -m venv venv \
@@ -80,6 +85,9 @@ RUN cd /usr/local/pgadmin4 \
     && wget https://raw.githubusercontent.com/postgres/pgadmin4/master/requirements.txt \
     && pip install -r requirements.txt \
     && pip install gunicorn
+# RUN curl -fsS https://www.pgadmin.org/static/packages_pgadmin_org.pub | gpg --dearmor -o /usr/share/keyrings/packages-pgadmin-org.gpg \
+#     && sh -c 'echo "deb [signed-by=/usr/share/keyrings/packages-pgadmin-org.gpg] https://ftp.postgresql.org/pub/pgadmin/pgadmin4/apt/$(lsb_release -cs) pgadmin4 main" > /etc/apt/sources.list.d/pgadmin4.list && apt update' \
+#     && apt-get update && apt-get install -y pgadmin4
 
 # cloudbeaver ################################################################
 
@@ -87,36 +95,6 @@ COPY --from=cloudbeaver  /opt/cloudbeaver  /opt/cloudbeaver
 COPY --from=cloudbeaver  /opt/java         /opt/java
 RUN mkdir -p /etc/skel/.local/share/cloudbeaver
 COPY cloudbeaver/cloudbeaver-run /etc/services.d/cloudbeaver/run
-
-# minio ######################################################################
-
-RUN wget -O /usr/local/bin/minio https://dl.min.io/server/minio/release/linux-amd64/minio \
-    && chmod +x /usr/local/bin/minio
-# COPY minio/minio-run /etc/services.d/minio/run
-
-# RUN mkdir -p /opt/minio \
-#     && mkdir -p /etc/minio \
-#     && wget -O /opt/minio/minio https://dl.min.io/server/minio/release/linux-amd64/minio \
-#     && chmod +x /opt/minio/minio \
-#     && ln -s /opt/minio/minio /usr/local/bin/minio
-
-# label-studio ###############################################################
-
-RUN apt-get update \
-    && apt-get install -y \
-    uwsgi \
-    git \
-    libxml2-dev \
-    libxslt-dev \
-    zlib1g-dev \
-    uwsgi \
-    && python3.9 -m venv /opt/label-studio \
-    && . /opt/label-studio/bin/activate \
-    && pip install --upgrade pip \
-    && pip install label-studio \
-    && chmod -R g=u /opt/label-studio
-
-COPY label-studio/label-studio-run  /etc/services.d/label-studio/run
-
-
+COPY cloudbeaver/cloudbeaver-run    /etc/s6-overlay/s6-rc.d/cloudbeaver/run
+RUN SERVICE_NAME=cloudbeaver && echo longrun > /etc/s6-overlay/s6-rc.d/${SERVICE_NAME}/type && touch /etc/s6-overlay/s6-rc.d/user/contents.d/${SERVICE_NAME}
 
