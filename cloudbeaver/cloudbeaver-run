@@ -67,7 +67,8 @@ echo \
         adminCredentialsSaveEnabled: ${CB_APP_ADMINCREDENTIALSSAVEENABLED:-true},
         defaultNavigatorSettings: {},
         enabledAuthProviders: [
-            \"local\"
+            \"local\",
+            \"reverseProxy\"
         ]
     }
 }
@@ -89,6 +90,13 @@ echo \
             defaultTheme: \"dark\",
             defaultLanguage: \"en\"
         },
+        authentication: {
+            baseAuthProvider: \"reverseProxy\",
+            primaryAuthProvider: \"reverseProxy\"
+        },
+        theming: {
+            defaultTheme: \"dark\"
+        },
         app: {
             // Log viewer config
             logViewer: {
@@ -102,15 +110,16 @@ echo \
             }
         }
     },
-    plugin_data_spreadsheet_new: {
-        hidden: false
-    },
-    plugin_data_export: {
-        disabled: false
-    },
-    // Notifications config
-    core_events: {
-        notificationsPool: 5
+    plugin: {
+        'data-spreadsheet': {
+            hidden: false
+        },
+        'data_export': {
+            disabled: false
+        },
+        'notifications': {
+            notificationsPool: 5
+        }
     }
 }
 " > ${cloudbeaver_product_runtime_conf_file}
@@ -158,3 +167,11 @@ su - ${USER_NAME} -c "{
 ; ${COMMAND} \
 ; }"
 
+
+
+export CB_SERVER_NAME=CloudBeaver \
+export CB_SERVER_URL=http://localhost:8978 \
+export CB_ADMIN_NAME='liveware' \
+export CB_ADMIN_PASSWORD='password' \
+&& cd /opt/cloudbeaver \
+&& java -jar /opt/cloudbeaver/server/plugins/org.eclipse.equinox.launcher_1.6.400.v20210924-0641.jar -product io.cloudbeaver.product.ce.product -web-config /opt/cloudbeaver/conf/cloudbeaver.conf -nl en -registryMultiLanguage -vmargs -Xmx2048M 

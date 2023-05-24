@@ -42,6 +42,8 @@ route /cloudbeaver/* {
   #uri strip_prefix /cloudbeaver
   reverse_proxy {
     to 127.0.0.1:8978
+    header_up   X-User    liveware
+    header_up   X-Role    admin
     #header_down  Location (?:^.+://)?(?:[^:/]+)?(?::[^/]+)?/  ./
   }
 }

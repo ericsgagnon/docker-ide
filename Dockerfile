@@ -45,7 +45,7 @@ COPY . ${WORKSPACE}/
 RUN apt-get update && apt-get upgrade -y \
     && apt-get install -y gdebi-core \
     && cd /tmp \
-    && export RSTUDIO_URL=$(wget -qO - https://rstudio.com/products/rstudio/download-server/debian-ubuntu/ | grep -oP "https.*server.*bionic.*rstudio-server-.*\.deb" | sort | tail -n 1) \
+    && export RSTUDIO_URL=$(wget -qO - https://rstudio.com/products/rstudio/download-server/debian-ubuntu/ | grep -oP "https.*server.*jammy.*rstudio-server-.*\.deb" | sort | tail -n 1) \
     && wget -O rstudio-server.deb $RSTUDIO_URL \
     && apt-get install -y ./rstudio-server.deb \
     && mkdir -p /var/run/rstudio-server \
@@ -84,7 +84,10 @@ RUN cd /usr/local/pgadmin4 \
     && cd venv \
     && wget https://raw.githubusercontent.com/postgres/pgadmin4/master/requirements.txt \
     && pip install -r requirements.txt \
-    && pip install gunicorn
+    && pip install gunicorn \
+    && pip install psycopg2 \
+    && pip install simplejson
+
 # RUN curl -fsS https://www.pgadmin.org/static/packages_pgadmin_org.pub | gpg --dearmor -o /usr/share/keyrings/packages-pgadmin-org.gpg \
 #     && sh -c 'echo "deb [signed-by=/usr/share/keyrings/packages-pgadmin-org.gpg] https://ftp.postgresql.org/pub/pgadmin/pgadmin4/apt/$(lsb_release -cs) pgadmin4 main" > /etc/apt/sources.list.d/pgadmin4.list && apt update' \
 #     && apt-get update && apt-get install -y pgadmin4
