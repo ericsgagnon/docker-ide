@@ -6,10 +6,12 @@ source /etc/profile.d/0000-env.sh
 eval $(cat /etc/cont-init.d/001-userconf.sh  | grep -E "^export USER_NAME" | envsubst)
 eval $(cat /etc/cont-init.d/001-userconf.sh  | grep -E "^export GROUP_NAME" | envsubst)
 
+rm /var/lib/rstudio-server/*
 chown -R ${USER_NAME}:${GROUP_NAME} /var/lib/rstudio-server
 chmod -R g=u /var/lib/rstudio-server
 mkdir -p /var/run/rstudio-server
 chmod 1777 /var/run/rstudio-server
+chown -R ${USER_NAME}:${GROUP_NAME} /var/run/rstudio-server
 
 # rstudio server uses an 'auth-none' flag to disable auth
 if [[ ${AUTH} == 'none' ]] ; then

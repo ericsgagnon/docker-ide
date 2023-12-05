@@ -17,7 +17,7 @@ RUN xcaddy build \
 
 FROM ericsgagnon/ide-base:${VERSION} as base
 
-# SHELL [ "/bin/bash", "-c" ]
+SHELL [ "/bin/bash", "-c" ]
 
 # caddy (proxy server) #######################################################
 FROM base as caddy-server
@@ -42,6 +42,7 @@ COPY . ${WORKSPACE}/
 
 # modified from rocker's install_rstudio.sh script
 # https://github.com/rocker-org/rocker-versioned2/blob/master/scripts/install_rstudio.sh
+    # && export RSTUDIO_URL="https://download2.rstudio.org/server/jammy/amd64/rstudio-server-2022.12.0-353-amd64.deb" \
 RUN apt-get update && apt-get upgrade -y \
     && apt-get install -y gdebi-core \
     && cd /tmp \
@@ -74,9 +75,11 @@ RUN SERVICE_NAME=code-server && echo longrun > /etc/s6-overlay/s6-rc.d/${SERVICE
 # export EXTENSIONS_GALLERY='{"serviceUrl": "https://extensions.coder.com/api"}'
 
 # pgadmin ####################################################################
-COPY --from=pgadmin      /pgadmin4            /usr/local/pgadmin4
-COPY pgadmin/pgadmin-run    /etc/s6-overlay/s6-rc.d/pgadmin/run
-RUN SERVICE_NAME=pgadmin && echo longrun > /etc/s6-overlay/s6-rc.d/${SERVICE_NAME}/type && touch /etc/s6-overlay/s6-rc.d/user/contents.d/${SERVICE_NAME}
+COPY --from=pgadmin      /pgadmin4         /usr/local/pgadmin4
+COPY pgadmin/pgadmin-run                   /etc/s6-overlay/s6-rc.d/pgadmin/run
+COPY pgadmin/pgadmin_master_password.sh    /etc/skel/.local/bin/pgadmin_master_password.sh
+RUN SERVICE_NAME=pgadmin && echo longrun > /etc/s6-overlay/s6-rc.d/${SERVICE_NAME}/type && touch /etc/s6-overlay/s6-rc.d/user/contents.d/${SERVICE_NAME} \
+    && chmod +x /etc/skel/.local/bin/pgadmin_master_password.sh
 
 RUN cd /usr/local/pgadmin4 \
     && python -m venv venv \
@@ -101,3 +104,13 @@ COPY cloudbeaver/cloudbeaver-run /etc/services.d/cloudbeaver/run
 COPY cloudbeaver/cloudbeaver-run    /etc/s6-overlay/s6-rc.d/cloudbeaver/run
 RUN SERVICE_NAME=cloudbeaver && echo longrun > /etc/s6-overlay/s6-rc.d/${SERVICE_NAME}/type && touch /etc/s6-overlay/s6-rc.d/user/contents.d/${SERVICE_NAME}
 
+# PATH #######################################################################
+
+# RUN wget https://github.com/exiledavatar/dedupe/raw/main/dedupe -O /etc/skel/.local/bin/dedupe \
+COPY --chmod=777 dedupe         /usr/local/bin/
+
+RUN cat ${WORKSPACE}/dedupe/.bashrc >> /etc/skel/.bashrc
+# ls -alh /etc/skel/ \
+#     && touch /etc/skel/.bashrc \
+#     && ls -alh /etc/skel \
+#     && ECHO "EXPORT PATH=$(~/.local/bin/dedupe ${PATH})" >> /etc/skel/.bashrc
