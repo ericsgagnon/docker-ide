@@ -31,17 +31,19 @@ export PGADMIN_LOG_FILE=${PGADMIN_LOG_DIR}"/pgadmin4.log"
 export PGADMIN_AZURE_CREDENTIAL_CACHE_DIR=${PGADMIN_AZURE_CREDENTIAL_CACHE_DIR:=${PGADMIN_DATA_DIR}"/azurecredentialcache"}
 export PGADMIN_KERBEROS_CCACHE_DIR=${PGADMIN_KERBEROS_CCACHE_DIR:=${PGADMIN_DATA_DIR}"/krbccache"}
 
-export PGADMIN_REMOTE_USER_HEADER=${PGADMIN_REMOTE_USER_HEADER:='REMOTE_USER'}
+export PGADMIN_REMOTE_USER_HEADER=${PGADMIN_REMOTE_USER_HEADER:='REMOTE-USER'}
 export PGADMIN_MASTER_PASSWORD_HOOK="~/.local/bin/pgadmin_master_password.sh %u"
+export PGADMIN_PYTHON_VERSION=$(cat ${PGADMIN_DIR}/pyvenv.cfg | grep executable | rev | cut -d / -f 1 | rev)
+export PGADMIN_PKG_DIR=${PGADMIN_DIR}/lib/${PGADMIN_PYTHON_VERSION}/site-packages/pgadmin4
 
 # setup config_distro.py
-config_distro_path=${PGADMIN_DIR}/config_distro.py
+config_distro_path=${PGADMIN_PKG_DIR}/config_distro.py
 touch ${config_distro_path}
 
 
+# LOG_FILE = '/dev/null'
 
 echo "
-LOG_FILE = '/dev/null'
 DEFAULT_BINARY_PATHS = {
         'pg': '/usr/bin'
 }
@@ -56,6 +58,7 @@ ENABLE_BINARY_PATH_BROWSING = True
 SERVER_MODE                 = True
 UPGRADE_CHECK_ENABLED       = False
 LOG_FILE                    = '${PGADMIN_LOG_FILE}'
+LOG_FILE = '-'
 AZURE_CREDENTIAL_CACHE_DIR  = '${PGADMIN_AZURE_CREDENTIAL_CACHE_DIR}'
 KERBEROS_CCACHE_DIR         = '${PGADMIN_KERBEROS_CCACHE_DIR}'
 DESKTOP_USER                = '${PGADMIN_DEFAULT_EMAIL}'
@@ -93,12 +96,11 @@ X_FRAME_OPTIONS = ''
 # propagate PGADMIN_CONFIG_* env vars to config_ditro.py
 for var in $(env | grep PGADMIN_CONFIG_ | cut -d "=" -f 1); do
     echo "${var##PGADMIN_CONFIG_} = ${var}" >> ${config_distro_path}
-    #echo ${var##PGADMIN_CONFIG_} = $(eval "echo \$$var") >> ${config_distro_path}
 done
 
 # Initialize DB before starting Gunicorn
 # Importing pgadmin4 (from this script) is enough
-#su - ${USER_NAME} -c "${PGADMIN_BASE_DIR}/venv/bin/python3 ${PGADMIN_DIR}/run_pgadmin.py"
+#su - ${USER_NAME} -c "${PGADMIN_BASE_DIR}/bin/python ${PGADMIN_DIR}/run_pgadmin.py"
 mkdir -p ${PGADMIN_LOG_DIR}
 chown -R ${USER_NAME}:${GROUP_NAME} ${PGADMIN_DIR}
 chown -R ${USER_NAME}:${GROUP_NAME} ${PGADMIN_LOG_DIR}
@@ -109,13 +111,14 @@ COMMAND_ARGS="
 -e SCRIPT_NAME=/pgadmin \
 -e REMOTE_USER=${PGADMIN_USER} \
 --pythonpath=${PGADMIN_DIR} \
+--chdir=${PGADMIN_PKG_DIR} \
 -w 1 \
 --threads 25 \
 --access-logfile - \
--c gunicorn_config.py \
-run_pgadmin:app \
+pgAdmin4:app \
 "
-
+# -c gunicorn_config.py \
+# lib/python3.12/site-packages/pgadmin4
 COMMAND=" \
 export DESKTOP_USER='${PGADMIN_EMAIL}' \
 export PGADMIN_DEFAULT_EMAIL='${PGADMIN_EMAIL}' \
@@ -124,10 +127,24 @@ export PGADMIN_DEFAULT_PASSWORD='${PGADMIN_PASSWORD}' \
 export PGADMIN_SETUP_PASSWORD='${PGADMIN_PASSWORD}' \
 export REMOTE_USER='${PGADMIN_EMAIL}' \
 && cd ${PGADMIN_DIR} \
-&& source ${PGADMIN_DIR}/venv/bin/activate \
-&& python /usr/local/pgadmin4/setup.py --user '${PGADMIN_SETUP_EMAIL}' \
-&& ${PGADMIN_DIR}/venv/bin/gunicorn \
+&& source ${PGADMIN_DIR}/bin/activate \
+&& pgadmin4-cli setup-db \
+&& pgadmin4-cli add-user '${PGADMIN_SETUP_EMAIL}' '${PGADMIN_PASSWORD}' \
+&& gunicorn \
 $(echo -n ${COMMAND_ARGS} ) "
+# python ${PGADMIN_DIR}/bin/pgadmin4 --user '${PGADMIN_SETUP_EMAIL}'
+# COMMAND=" \
+# export DESKTOP_USER='${PGADMIN_EMAIL}' \
+# export PGADMIN_DEFAULT_EMAIL='${PGADMIN_EMAIL}' \
+# export PGADMIN_SETUP_EMAIL='${PGADMIN_EMAIL}' \
+# export PGADMIN_DEFAULT_PASSWORD='${PGADMIN_PASSWORD}' \
+# export PGADMIN_SETUP_PASSWORD='${PGADMIN_PASSWORD}' \
+# export REMOTE_USER='${PGADMIN_EMAIL}' \
+# && cd ${PGADMIN_DIR} \
+# && source ${PGADMIN_DIR}/bin/activate \
+# && python /usr/local/pgadmin4/setup.py --user '${PGADMIN_SETUP_EMAIL}' \
+# && ${PGADMIN_DIR}/bin/gunicorn \
+# $(echo -n ${COMMAND_ARGS} ) "
 
 su - ${USER_NAME} -c "{
   echo [\"$(date +%Y-%m-%dT%H:%M:%S%z)\"] info s6-${DISPLAY_NAME}' user:     '"'$(id)'" \

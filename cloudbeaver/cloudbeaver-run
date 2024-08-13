@@ -24,6 +24,7 @@ user_xdg_data_home=$(su - ${USER_NAME} -c 'echo $XDG_DATA_HOME')
 user_workspacelocation=${user_xdg_data_home}'/cloudbeaver'
 mkdir -p ${user_workspacelocation}
 
+
 # updates and restarts with new containers already have a default workspace directory, 
 # we need to need to make sure the workspace directory isn't present so we can create the link.
 rm -rf ${CB_SERVER_WORKSPACELOCATION}
@@ -46,6 +47,8 @@ sed -E -i "s|(adminCredentialsSaveEnabled):[^,]*|\1:  ${CB_APP_ADMINCREDENTIALSS
 
 # populate runtime files
 mkdir -p ${CB_SERVER_WORKSPACELOCATION}/.data
+chown -R ${USER_NAME}:${GROUP_NAME} ${CLOUDBEAVER_HOME} ${user_workspacelocation}
+
 # populate the .cloudbeaver.runtime.conf file
 cloudbeaver_server_runtime_conf_file=${CB_SERVER_WORKSPACELOCATION}/.data/.cloudbeaver.runtime.conf
 #if [[ ! -f ${cloudbeaver_server_runtime_conf_file} ]] ; then
@@ -69,6 +72,13 @@ echo \
         enabledAuthProviders: [
             \"local\",
             \"reverseProxy\"
+        ],
+        authConfigurations: [
+            {
+                id: \"caddy_reverse_proxy\",
+                provider: \"reverseProxy\",
+                displayName: \"Caddy\"
+            }
         ]
     }
 }
@@ -142,7 +152,7 @@ chown -R ${USER_NAME}:${GROUP_NAME} ${CB_SERVER_WORKSPACELOCATION}
 chown -R ${USER_NAME}:${GROUP_NAME} ${CLOUDBEAVER_HOME}
 
 # build command
-export CB_LAUNCHER_JAR=( ${CLOUDBEAVER_HOME}/server/plugins/org.eclipse.equinox.launcher*.jar )
+export CB_LAUNCHER_JAR=( ${CLOUDBEAVER_HOME}/server/plugins/org.jkiss.dbeaver.launcher*.jar )
 export COMMAND_ARGS=\
 " -jar "${CB_CLI_ARGS_JAR:-" ${CB_LAUNCHER_JAR} "}\
 " -product "${CB_CLI_ARGS_PRODUCT:-" io.cloudbeaver.product.ce.product "}\
@@ -169,9 +179,9 @@ su - ${USER_NAME} -c "{
 
 
 
-export CB_SERVER_NAME=CloudBeaver \
-export CB_SERVER_URL=http://localhost:8978 \
-export CB_ADMIN_NAME='liveware' \
-export CB_ADMIN_PASSWORD='password' \
-&& cd /opt/cloudbeaver \
-&& java -jar /opt/cloudbeaver/server/plugins/org.eclipse.equinox.launcher_1.6.400.v20210924-0641.jar -product io.cloudbeaver.product.ce.product -web-config /opt/cloudbeaver/conf/cloudbeaver.conf -nl en -registryMultiLanguage -vmargs -Xmx2048M 
+# export CB_SERVER_NAME=CloudBeaver \
+# export CB_SERVER_URL=http://localhost:8978 \
+# export CB_ADMIN_NAME='liveware' \
+# export CB_ADMIN_PASSWORD='password' \
+# && cd /opt/cloudbeaver \
+# && java -jar /opt/cloudbeaver/server/plugins/org.eclipse.equinox.launcher_1.6.400.v20210924-0641.jar -product io.cloudbeaver.product.ce.product -web-config /opt/cloudbeaver/conf/cloudbeaver.conf -nl en -registryMultiLanguage -vmargs -Xmx2048M 
